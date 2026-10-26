@@ -1,0 +1,2378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HabitFlow — Your Daily Routine</title>
+  <style>
+    :root {
+      --bg: #f0f7f3;
+      --card: #ffffff;
+      --green: #28664e;
+      --green-dark: #1d4e3b;
+      --green-soft: #dceee3;
+      --text: #20352b;
+      --muted: #728078;
+      --line: #e4ece7;
+      --shadow: 0 12px 35px rgba(36, 78, 57, .07);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button { font: inherit; cursor: pointer; }
+    .app { max-width: 1120px; margin: 0 auto; padding: 28px 22px 100px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:34px; }
+    .brand { display:flex; align-items:center; gap:11px; font-size:21px; font-weight:800; letter-spacing:-.6px; }
+    .brand-mark { width:40px; height:40px; border-radius:13px; display:grid; place-items:center; background:var(--green); color:white; font-size:22px; }
+    .date-chip { color:var(--muted); font-size:13px; background:rgba(255,255,255,.7); padding:10px 14px; border:1px solid var(--line); border-radius:999px; }
+    .eyebrow { color:var(--green); text-transform:uppercase; letter-spacing:1.8px; font-weight:800; font-size:11px; margin:0 0 9px; }
+    h1 { font-size:clamp(30px, 5vw, 43px); letter-spacing:-1.8px; line-height:1.1; margin:0; }
+    .subtitle { margin:12px 0 0; color:var(--muted); line-height:1.6; }
+    .page { display:none; animation:fade .2s ease; }
+    .page.active { display:block; }
+    .settings-range { width:100%; accent-color:var(--green); margin:12px 0; }
+    .settings-row { display:flex; justify-content:space-between; align-items:center; gap:18px; flex-wrap:wrap; }
+    .settings-value { min-width:48px; text-align:right; font-weight:750; }
+    .code-message { min-height:22px; margin-top:12px; font-weight:700; }
+    .code-message.success { color:#21804a; }
+    .code-message.error { color:#b42318; }
+    .reward-hero { background:linear-gradient(135deg,#1d4e3b,#3e8061); color:white; border-radius:24px; padding:28px; box-shadow:var(--shadow); }
+    .reward-hero .eyebrow { color:#d4efdf; }
+    .xp-total { font-size:clamp(38px,7vw,58px); line-height:1; font-weight:850; letter-spacing:-2px; margin:10px 0; }
+    .level-pill { display:inline-flex; align-items:center; gap:7px; padding:7px 11px; border-radius:999px; background:rgba(255,255,255,.16); font-size:13px; font-weight:750; }
+    .reward-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:20px; }
+    .reward-progress { height:12px; border-radius:99px; background:#e9f0eb; overflow:hidden; margin:14px 0 9px; }
+    .reward-progress > div { height:100%; width:0; border-radius:inherit; background:linear-gradient(90deg,#8c6bd1,#d6a6f5); transition:width .25s ease; }
+    .reward-input { width:100%; margin-top:10px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; font:inherit; color:var(--text); background:var(--bg); }
+    .achievement-list { display:grid; gap:10px; margin-top:16px; }
+    .achievement { display:flex; align-items:center; gap:12px; border:1px solid var(--line); padding:12px; border-radius:14px; }
+    .achievement-icon { width:40px; height:40px; border-radius:12px; background:var(--green-soft); display:grid; place-items:center; font-size:20px; flex-shrink:0; }
+    .achievement.locked { opacity:.5; filter:grayscale(1); }
+    .spin-hero { background:radial-gradient(circle at 80% 15%,rgba(197,157,255,.35),transparent 32%),linear-gradient(135deg,#17172f,#30205b 60%,#52317a); color:white; border-radius:24px; padding:26px; box-shadow:var(--shadow); }
+    .spin-count { font-size:clamp(38px,7vw,54px); line-height:1; font-weight:900; letter-spacing:-2px; margin:12px 0 8px; }
+    .spin-btn { border:0; border-radius:14px; padding:14px 20px; background:linear-gradient(135deg,#e4c7ff,#a98bff); color:#241441; font-weight:900; box-shadow:0 8px 24px #09051b66; }
+    .spin-btn:disabled { opacity:.4; cursor:not-allowed; }
+    .spin-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+    .spin-actions .spin-btn { flex:1 1 180px; }
+    .auto-spin-btn { flex:1 1 150px; border:1px solid #d7c7ff88; border-radius:14px; padding:14px 18px; background:rgba(255,255,255,.1); color:#fff; font-weight:900; cursor:pointer; }
+    .auto-spin-btn[aria-pressed="true"] { background:linear-gradient(135deg,#a5f3c7,#67d6a0); color:#142d25; border-color:#a5f3c7; }
+    .case-reel { display:none; position:relative; margin-top:18px; padding:14px 10px 10px; overflow:hidden; border:1px solid #6d5a9f; border-radius:16px; background:linear-gradient(180deg,#100d1e,#201637); box-shadow:inset 0 0 24px #0008; }
+    .case-reel.active { display:block; animation:caseEnter .35s ease-out; }
+    .case-window { overflow:hidden; position:relative; padding:8px 0; }
+    .case-window::before,.case-window::after { content:""; position:absolute; top:0; bottom:0; width:48px; z-index:2; pointer-events:none; }
+    .case-window::before { left:0; background:linear-gradient(90deg,#100d1e,transparent); }
+    .case-window::after { right:0; background:linear-gradient(270deg,#100d1e,transparent); }
+    .case-track { display:flex; gap:8px; width:max-content; transform:translateX(0); will-change:transform; }
+    .case-tile { width:94px; height:112px; flex:0 0 94px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; border:1px solid #ffffff24; border-bottom:4px solid var(--tile-color,#a98bff); border-radius:9px; background:linear-gradient(155deg,#ffffff12,#ffffff04); color:#fff; box-sizing:border-box; }
+    .case-tile .case-icon { font-size:32px; line-height:1; filter:drop-shadow(0 0 7px var(--tile-color,#a98bff)); }
+    .case-tile .case-name { max-width:84px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; font-weight:800; }
+    .case-pointer { position:absolute; top:0; bottom:28px; left:50%; width:3px; z-index:3; background:#f3dd8a; box-shadow:0 0 10px #ffdb6e; transform:translateX(-50%); }
+    .case-pointer::before { content:"▼"; position:absolute; top:0; left:50%; transform:translateX(-50%); color:#ffe68b; font-size:15px; text-shadow:0 0 8px #ffce4d; }
+    .case-status { margin-top:8px; text-align:center; color:#cdbcf5; font-size:11px; font-weight:900; letter-spacing:2px; }
+    .case-reel.landed { border-color:#f3dd8a; box-shadow:0 0 28px #c6a5ff55,inset 0 0 25px #b78bff18; }
+    .case-reel.landed .case-pointer { animation:pointerHit .45s ease-out; }
+    @keyframes caseEnter { from { opacity:0; transform:translateY(8px) scale(.98); } to { opacity:1; transform:none; } }
+    @keyframes pointerHit { 0%,100% { transform:translateX(-50%); } 30% { transform:translateX(-50%) scaleY(1.4); } 60% { transform:translateX(-50%) scaleY(.8); } }
+    @media (max-width:480px) { .case-tile { width:78px; flex-basis:78px; height:100px; } .case-tile .case-name { max-width:68px; } }
+    .aura-result { display:none; margin-top:18px; padding:22px; border:1px solid #bba2ff88; border-radius:18px; text-align:center; background:linear-gradient(135deg,#211b3c,#352650); }
+    .aura-result.show { display:block; animation:fade .35s ease; }
+    .aura-result.rolling-result { border-color:#bba2ff; box-shadow:0 0 24px #a98bff44,inset 0 0 30px #a98bff12; }
+    .aura-result.tick { animation:reelTick .16s ease-out; }
+    .aura-result.jackpot-hit { animation:jackpotReveal .85s cubic-bezier(.16,1,.3,1); border-color:#f0d7ff; box-shadow:0 0 0 2px #d6a6f555,0 0 35px #bb83ff88,inset 0 0 35px #bb83ff22; }
+    .aura-result.jackpot-hit .aura-icon { animation:iconPop .75s cubic-bezier(.16,1,.3,1); filter:drop-shadow(0 0 15px #d6a6f5); }
+    .aura-result.jackpot-hit .aura-name { text-shadow:0 0 18px #d6a6f5aa; }
+    body.rare-drop-flash::after { content:""; position:fixed; inset:0; z-index:9999; pointer-events:none; background:radial-gradient(circle,#f3d9ff66,transparent 65%); animation:screenFlash .8s ease-out forwards; }
+    @keyframes reelTick { 0% { transform:translateY(-3px) scale(1.01); filter:brightness(1.5); } 100% { transform:translateY(0) scale(1); filter:brightness(1); } }
+    @keyframes jackpotReveal { 0% { transform:scale(.88); filter:brightness(2.3); } 48% { transform:scale(1.045); } 72% { transform:scale(.985); } 100% { transform:scale(1); filter:brightness(1); } }
+    @keyframes iconPop { 0% { transform:scale(.3) rotate(-18deg); } 65% { transform:scale(1.25) rotate(8deg); } 100% { transform:scale(1) rotate(0); } }
+    @keyframes screenFlash { 0% { opacity:0; } 20% { opacity:1; } 100% { opacity:0; } }
+    @media (prefers-reduced-motion: reduce) { .aura-result, .aura-result *, body.rare-drop-flash::after { animation-duration:.01ms !important; } }
+
+    /* Rarity-specific reveal cinematics */
+    .reveal-cinema { position:fixed; inset:0; z-index:10050; display:grid; place-items:center; overflow:hidden; background:#03040a; color:white; text-align:center; padding:24px; animation:cinemaFade .25s ease; }
+    .reveal-cinema .cinema-inner { position:relative; z-index:2; max-width:680px; width:100%; }
+    .reveal-cinema .cinema-title { font-size:clamp(25px,5vw,48px); font-weight:1000; letter-spacing:1px; margin:12px 0; text-shadow:0 0 24px currentColor; }
+    .reveal-cinema .cinema-icon { font-size:clamp(64px,13vw,120px); line-height:1.2; }
+    .reveal-cinema .cinema-quote { font-size:clamp(15px,2.4vw,22px); line-height:1.6; margin:16px auto; max-width:580px; }
+    .reveal-cinema .cinema-sub { opacity:.8; font-size:12px; letter-spacing:3px; text-transform:uppercase; }
+    .reveal-cinema.blackout { animation:blackoutIn .18s ease-out; background:#000; }
+    .reveal-cinema.star-reveal { background:radial-gradient(circle at center,var(--reveal-color,#c18aff33),#080713 48%,#020207 100%); }
+    .reveal-star { position:absolute; left:50%; top:48%; width:12px; height:12px; background:var(--reveal-color,#c18aff); transform:translate(-50%,-50%) rotate(45deg); box-shadow:0 0 30px 12px var(--reveal-color,#c18aff); animation:starBurst 1.5s cubic-bezier(.15,.8,.2,1) both; }
+    .reveal-star:before,.reveal-star:after { content:""; position:absolute; background:inherit; inset:-22px 4px; border-radius:50%; }
+    .reveal-star:after { inset:4px -22px; }
+    .space-scene { position:absolute; inset:0; overflow:hidden; background:radial-gradient(ellipse at 50% 45%,#22256c 0%,#10102e 28%,#03040c 70%); }
+    .space-scene:before { content:""; position:absolute; inset:-30%; background-image:radial-gradient(2px 2px at 10% 20%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 80% 30%,#fff 50%,transparent 60%),radial-gradient(2px 2px at 50% 75%,#c8dcff 50%,transparent 60%),radial-gradient(1px 1px at 25% 60%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 70% 80%,#fff 50%,transparent 60%),radial-gradient(2px 2px at 90% 55%,#e3caff 50%,transparent 60%); background-size:230px 190px,280px 240px,190px 220px,260px 210px,210px 260px,300px 250px; animation:spaceDrift 5s linear infinite; }
+    .space-planet { position:absolute; width:min(46vw,300px); aspect-ratio:1; border-radius:50%; left:50%; top:50%; transform:translate(-50%,-50%); background:radial-gradient(circle at 30% 28%,#d8d4ff,#7769ca 28%,#30225f 62%,#080817 76%); box-shadow:0 0 70px #6b70ff66; animation:planetFloat 5s ease-in-out infinite alternate; }
+    .space-planet:after { content:""; position:absolute; left:-22%; top:38%; width:144%; height:24%; border:5px solid #c7baffaa; border-left-color:#7a8bff55; border-right-color:#e1caffcc; border-radius:50%; transform:rotate(-18deg); box-shadow:0 0 18px #9a8dff88; }
+    .dog-stage { font-size:clamp(90px,18vw,170px); filter:drop-shadow(0 0 30px #ffd27a88); animation:dogBark .32s ease-in-out infinite alternate; }
+    .dog-caption { font-size:clamp(17px,3vw,26px); font-weight:900; letter-spacing:2px; }
+    .shush-face { font-size:clamp(100px,22vw,190px); line-height:1.1; animation:shushFloat .8s ease-in-out infinite alternate; filter:drop-shadow(0 0 28px #ffffff44); }
+    .aura-card[role="button"] { cursor:pointer; transition:transform .16s ease,border-color .16s ease; }
+    .aura-card[role="button"]:hover,.aura-card[role="button"]:focus-visible { transform:translateY(-3px); border-color:#a98bff; outline:2px solid #a98bff66; }
+    @keyframes shushFloat { from{transform:scale(.96) rotate(-2deg)}to{transform:scale(1.04) rotate(2deg)} }
+    @keyframes cinemaFade { from{opacity:0}to{opacity:1} } @keyframes blackoutIn { from{opacity:0}to{opacity:1} }
+    @keyframes starBurst { 0%{opacity:0;transform:translate(-50%,-50%) rotate(45deg) scale(.01)} 45%{opacity:1;transform:translate(-50%,-50%) rotate(225deg) scale(5)} 100%{opacity:.9;transform:translate(-50%,-50%) rotate(405deg) scale(1.5)} }
+    @keyframes spaceDrift { from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(-7%,5%,0) rotate(3deg)} } @keyframes planetFloat { from{transform:translate(-50%,-48%) scale(.94)}to{transform:translate(-50%,-52%) scale(1.04)} }
+    @keyframes dogBark { from{transform:rotate(-7deg) scale(1)}to{transform:rotate(7deg) scale(1.08)} }
+    @media (prefers-reduced-motion:reduce) { .reveal-cinema *, .reveal-cinema { animation-duration:.01ms!important; } }
+
+    .aura-icon { font-size:54px; line-height:1.2; }
+    .aura-name { font-size:25px; font-weight:900; margin:8px 0 4px; }
+    .aura-rarity { text-transform:uppercase; font-size:11px; letter-spacing:2px; font-weight:900; }
+    .aura-collection { display:grid; grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:10px; margin-top:14px; }
+    .aura-card { border:1px solid var(--line); border-radius:14px; padding:14px; text-align:center; background:var(--card); }
+    .spin-dust { color:#d9c7ff; font-size:12px; font-weight:800; margin:10px 0 0; letter-spacing:.3px; }
+    .sell-aura-btn { margin-top:10px; width:100%; border:1px solid #a98bff88; border-radius:9px; padding:8px 6px; background:#8e6bd51c; color:var(--text); font:inherit; font-size:12px; font-weight:800; cursor:pointer; }
+    .sell-aura-btn:disabled { opacity:.35; cursor:not-allowed; }
+    .ultimate-progress-wrap { margin:12px 0; padding:14px; border:1px solid #b89aff66; border-radius:14px; background:rgba(142,107,213,.12); }
+    .ultimate-progress-track { height:12px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.12); margin:9px 0 5px; }
+    .ultimate-progress-fill { height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg,#9b7bff,#ffe08a); transition:width .25s ease; }
+    .ultimate-spin-btn { width:100%; margin-top:9px; border:1px solid #f5d98a; border-radius:12px; padding:12px 14px; background:linear-gradient(135deg,#ffe9a8,#b99aff); color:#241441; font:inherit; font-weight:900; cursor:pointer; }
+    .ultimate-spin-btn:disabled { opacity:.45; cursor:not-allowed; }
+
+    .aura-card.undiscovered { opacity:.48; filter:grayscale(1); }
+    .odds-list { display:grid; gap:9px; margin-top:12px; }
+    .odds-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:11px; background:var(--bg); font-size:13px; }
+    .rarity-common { color:#b4bec9; } .rarity-uncommon { color:#67d391; } .rarity-rare { color:#5cb8ff; } .rarity-epic { color:#c18aff; } .rarity-legendary { color:#ffce63; } .rarity-mythic { color:#ff727f; } .rarity-divine { color:#ff9cf5; } .rarity-secret { color:#ff4bdf; text-shadow:0 0 10px #ff4bdf55; } .rarity-transcendent { color:#ffffff; text-shadow:0 0 12px #8b5cf6,0 0 24px #ec4899; }
+    .gear-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:16px; margin-top:16px; align-items:stretch; }
+    .gear-card { border:1px solid var(--line); border-radius:16px; padding:16px; background:var(--card); min-width:0; display:flex; flex-direction:column; gap:3px; }
+    .gear-card.equipped { border:2px solid #7bd7a5; box-shadow:0 0 0 2px #7bd7a522; }
+    .gear-slot { display:inline-flex; align-self:flex-start; font-size:11px; font-weight:850; text-transform:uppercase; letter-spacing:.6px; border:1px solid var(--line); padding:4px 8px; border-radius:999px; margin:0 0 8px; }
+    .gear-card.locked { opacity:.68; }
+    .gear-art { min-height:92px; display:grid; place-items:center; border-radius:12px; background:linear-gradient(135deg,#eef4ef,#dceee3); font-size:42px; margin-bottom:12px; }
+    .gear-card.final-gear { border:2px solid #b88bff; background:linear-gradient(145deg,#20162f,#3b2555); color:#fff; box-shadow:0 0 22px #a98bff30; }
+    .gear-card.final-gear .gear-art { background:radial-gradient(circle at 50% 25%,#e7caff,#7e4cb5 55%,#25153a); }
+    .gear-card.final-gear .muted { color:#d9c7ed; }
+    .gear-recipe { font-size:12px; line-height:1.6; margin:10px 0; }
+    .gear-status { font-size:12px; font-weight:800; margin-top:8px; }
+    .gear-craft { width:100%; margin-top:10px; border:0; border-radius:10px; padding:10px; background:var(--green); color:white; font:inherit; font-weight:800; }
+    .gear-craft:disabled { opacity:.4; cursor:not-allowed; }
+    .gear-equip { width:100%; margin-top:8px; border:1px solid #7bd7a5; border-radius:10px; padding:10px; background:#7bd7a51a; color:var(--text); font:inherit; font-weight:850; cursor:pointer; }
+    .gear-equip:disabled { opacity:.7; cursor:default; }
+    .gear-card .gear-recipe { flex:1; }
+    @media(max-width:520px) { .gear-grid { grid-template-columns:minmax(0,1fr); gap:12px; } .gear-card { padding:14px; } }
+    .item-pouch { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .item-chip { border:1px solid var(--line); background:var(--bg); border-radius:999px; padding:8px 11px; font-size:12px; font-weight:750; }
+    .milo-gauntlet { font-size:30px; letter-spacing:2px; text-shadow:0 0 12px #e7caff; }
+    .inventory-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(235px,1fr)); gap:14px; margin-top:16px; }
+    .potion-card { border:1px solid var(--line); border-radius:16px; padding:16px; background:var(--card); min-width:0; display:flex; flex-direction:column; }
+    .potion-card.owned-potion { border-color:#7bd7a5; background:linear-gradient(145deg,var(--card),#7bd7a510); }
+    .potion-section { margin-top:18px; }
+    .potion-section-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:0 0 6px; }
+    .potion-section-head h3 { margin:0; font-size:16px; }
+    .potion-count { font-size:12px; color:var(--muted); }
+    .potion-empty { padding:16px; border:1px dashed var(--line); border-radius:12px; color:var(--muted); font-size:13px; }
+    .potion-recipe-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(235px,1fr)); gap:14px; margin-top:12px; }
+    .potion-icon { font-size:34px; }
+    .potion-card h3 { margin:8px 0 5px; }
+    .potion-card p { line-height:1.5; }
+    .potion-action { border:0; border-radius:10px; padding:10px 13px; background:#dceee3; color:#1d4e3b; font-weight:850; width:100%; margin-top:10px; }
+    .potion-action:disabled { opacity:.4; cursor:not-allowed; }
+    .inventory-status { padding:12px 14px; border-radius:12px; background:var(--bg); margin-top:12px; line-height:1.5; }
+    @media (max-width:650px) { .reward-grid { grid-template-columns:1fr; } .bottom-nav { max-width:calc(100vw - 16px); overflow-x:auto; } }
+    @keyframes fade { from { opacity:.5; transform:translateY(4px) } to { opacity:1; transform:none } }
+    .today-grid { display:grid; grid-template-columns:minmax(0, 1.4fr) minmax(260px, .8fr); gap:22px; margin-top:28px; }
+    .card { background:var(--card); border:1px solid rgba(220,232,224,.85); border-radius:22px; padding:24px; box-shadow:var(--shadow); }
+    .card-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:19px; }
+    h2 { font-size:18px; letter-spacing:-.4px; margin:0; }
+    .muted { color:var(--muted); }
+    .small { font-size:13px; }
+    .progress-number { font-size:35px; font-weight:800; letter-spacing:-1.5px; color:var(--green); }
+    .progress-track { height:10px; border-radius:99px; background:#e9f0eb; overflow:hidden; margin:15px 0 10px; }
+    .progress-fill { width:0%; height:100%; border-radius:inherit; background:linear-gradient(90deg, #28664e, #6da786); transition:width .25s ease; }
+    .progress-meta { display:flex; justify-content:space-between; gap:10px; color:var(--muted); font-size:12px; }
+    .habit-list { display:grid; gap:11px; }
+    .habit { display:flex; align-items:center; gap:13px; padding:16px; border:1px solid var(--line); border-radius:15px; transition:.2s; cursor:pointer; }
+    .habit:focus-visible { outline:3px solid #8bbba0; outline-offset:2px; }
+    .habit:hover { border-color:#b8d4c3; transform:translateY(-1px); }
+    .habit.done { background:#f5faf6; }
+    .habit input { appearance:none; flex:0 0 22px; width:22px; height:22px; border:2px solid #c4d3c9; border-radius:7px; display:grid; place-content:center; margin:0; cursor:pointer; }
+    .habit input::before { content:""; width:10px; height:6px; border-left:2px solid white; border-bottom:2px solid white; transform:rotate(-45deg) scale(0); transition:transform .12s; margin-top:-2px; }
+    .habit input:checked { background:var(--green); border-color:var(--green); }
+    .habit input:checked::before { transform:rotate(-45deg) scale(1); }
+    .habit-label { font-weight:650; flex:1; }
+    .habit.done .habit-label { color:#819087; text-decoration:line-through; }
+    .habit-icon { width:38px; height:38px; display:grid; place-items:center; border-radius:12px; background:var(--green-soft); font-size:18px; }
+    .quote { background:var(--green); color:white; position:relative; overflow:hidden; }
+    .quote::after { content:""; position:absolute; width:190px; height:190px; border:1px solid rgba(255,255,255,.13); border-radius:50%; right:-70px; bottom:-100px; box-shadow:0 0 0 25px rgba(255,255,255,.035), 0 0 0 50px rgba(255,255,255,.025); }
+    .quote .eyebrow { color:#bde2cb; }
+    .quote h2 { font-size:25px; line-height:1.25; max-width:280px; }
+    .quote p { color:#d8eadf; line-height:1.7; font-size:14px; }
+    .mini-stats { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px; }
+    .mini-stat { background:#f6faf7; border:1px solid var(--line); padding:16px; border-radius:16px; }
+    .mini-stat strong { display:block; font-size:24px; color:var(--green); margin-bottom:4px; }
+    .mini-stat span { color:var(--muted); font-size:12px; }
+    .focus-layout { max-width:760px; margin:28px auto 0; display:grid; grid-template-columns:1.15fr .85fr; gap:20px; }
+    .timer-card { text-align:center; padding:32px 24px; }
+    .timer-ring { width:min(260px, 75vw); aspect-ratio:1; margin:24px auto; border-radius:50%; display:grid; place-items:center; background:conic-gradient(var(--green) var(--ring, 100%), #e8f0ea 0); position:relative; }
+    .timer-ring::before { content:""; position:absolute; inset:10px; border-radius:50%; background:white; }
+    .timer-inner { position:relative; z-index:1; }
+    .timer-time { font-size:clamp(42px, 8vw, 55px); font-weight:800; letter-spacing:-2px; font-variant-numeric:tabular-nums; }
+    .timer-caption { color:var(--muted); font-size:13px; margin-top:6px; }
+    .button-row { display:flex; justify-content:center; flex-wrap:wrap; gap:9px; }
+    .btn { border:0; border-radius:12px; padding:12px 17px; font-weight:700; transition:.15s; }
+    .btn:active { transform:scale(.98); }
+    .btn-primary { color:white; background:var(--green); }
+    .btn-primary:hover { background:var(--green-dark); }
+    .btn-secondary { background:#edf5ef; color:var(--green); }
+    .btn-quiet { background:transparent; border:1px solid var(--line); color:var(--muted); }
+    .btn:disabled { opacity:.42; cursor:not-allowed; }
+    .session-list { display:grid; gap:12px; margin-top:15px; }
+    .session-row { display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid var(--line); padding:12px 0; }
+    .session-row:last-child { border-bottom:0; }
+    .stat-value { font-size:30px; font-weight:800; letter-spacing:-1px; color:var(--green); }
+    .chart { display:flex; align-items:end; gap:clamp(8px, 2vw, 20px); height:190px; padding:20px 4px 0; border-bottom:1px solid var(--line); }
+    .chart-col { flex:1; min-width:0; height:100%; display:flex; flex-direction:column; justify-content:end; align-items:center; gap:8px; }
+    .chart-value { font-size:11px; color:var(--muted); min-height:14px; }
+    .bar-wrap { width:min(36px, 100%); flex:1; display:flex; align-items:end; }
+    .bar { width:100%; min-height:3px; border-radius:8px 8px 2px 2px; background:#b7d8c2; transition:height .3s; }
+    .bar.today { background:var(--green); }
+    .chart-label { font-size:11px; color:var(--muted); padding-bottom:10px; }
+    .bottom-nav { position:fixed; z-index:10; bottom:18px; left:50%; transform:translateX(-50%); display:flex; gap:5px; padding:7px; background:rgba(255,255,255,.94); border:1px solid var(--line); border-radius:18px; box-shadow:0 10px 35px rgba(27,60,42,.15); backdrop-filter:blur(14px); }
+    .nav-btn { border:0; background:transparent; color:var(--muted); border-radius:12px; padding:11px 17px; display:flex; align-items:center; gap:8px; font-size:13px; font-weight:750; }
+    .nav-btn.active { color:white; background:var(--green); }
+    body.study-only #inventoryPage, body.study-only #rewardsPage { display:none !important; }
+    body.study-only .nav-btn[data-page="inventoryPage"], body.study-only .nav-btn[data-page="rewardsPage"] { display:none !important; }
+    body.study-only .bottom-nav { gap:4px; }
+    .nav-icon { font-size:16px; }
+    .notice { margin-top:14px; padding:12px 14px; background:#f6faf7; border:1px solid var(--line); border-radius:12px; color:var(--muted); font-size:12px; line-height:1.5; }
+    footer { text-align:center; margin-top:35px; color:#93a198; font-size:12px; line-height:1.8; }
+    .creator-credit { color:var(--green); font-weight:750; letter-spacing:.2px; }
+
+    .music-player { margin-top:18px; background:#f6faf7; border:1px solid var(--line); border-radius:17px; padding:16px; }
+    .music-top { display:flex; align-items:center; gap:12px; }
+    .music-art { width:46px; height:46px; flex:0 0 46px; border-radius:13px; display:grid; place-items:center; color:white; background:linear-gradient(135deg,#28664e,#8ab99a); font-size:21px; }
+    .music-info { flex:1; min-width:0; }
+    .music-info strong { display:block; font-size:14px; }
+    .music-info span { display:block; color:var(--muted); font-size:12px; margin-top:4px; }
+    .music-toggle { width:42px; height:42px; border:0; border-radius:50%; color:white; background:var(--green); font-size:16px; }
+    .music-controls { display:flex; align-items:center; gap:10px; margin-top:14px; }
+    .music-controls input { width:100%; accent-color:var(--green); }
+    .music-status { color:var(--muted); font-size:11px; margin-top:9px; line-height:1.4; }
+    .music-visual { margin-top:14px; height:100px; border-radius:12px; background:linear-gradient(135deg,#dceee3,#edf5ef 55%,#d4e8dc); display:flex; align-items:center; justify-content:center; gap:7px; overflow:hidden; }
+    .music-visual span { display:block; width:5px; height:18px; border-radius:5px; background:#609477; opacity:.8; }
+    .music-visual.playing span { animation: soundwave .75s ease-in-out infinite alternate; }
+    .music-visual.playing span:nth-child(2n) { animation-delay:.2s; }
+    .music-visual.playing span:nth-child(3n) { animation-delay:.4s; }
+    @keyframes soundwave { from { height:12px; } to { height:48px; } }
+
+    @media (max-width:720px) {
+      .app { padding:20px 15px 105px; }
+      header { margin-bottom:28px; }
+      .today-grid, .focus-layout { grid-template-columns:1fr; }
+      .card { padding:20px; }
+      .quote { min-height:190px; }
+      .focus-layout { margin-top:20px; }
+      .nav-btn { padding:11px 13px; gap:6px; }
+      .nav-btn span:last-child { font-size:12px; }
+      .date-chip { font-size:11px; padding:9px 10px; }
+    }
+  </style>
+
+  <!-- Firebase SDKs for HabitFlow account login and cloud sync -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+</head>
+<body>
+
+  <style>
+    #hfAuthGate { position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(10,13,22,.94); color:#f7f8fc; font-family:inherit; overflow:auto; }
+    #hfAuthGate[hidden] { display:none !important; }
+    #hfAuthCard { width:min(440px,100%); background:#171b29; border:1px solid #353c51; border-radius:18px; padding:26px; box-shadow:0 20px 70px #0008; }
+    #hfAuthCard h2 { margin:0 0 7px; font-size:27px; }
+    #hfAuthCard p { color:#b8bfd1; line-height:1.45; margin:0 0 17px; }
+    #hfAuthCard label { display:block; font-size:13px; margin:12px 0 6px; color:#dce1ee; }
+    #hfAuthCard input { box-sizing:border-box; width:100%; padding:12px; border:1px solid #424b63; border-radius:9px; background:#0f1320; color:white; font:inherit; }
+    #hfAuthCard button { width:100%; border:0; border-radius:9px; padding:12px; margin-top:10px; cursor:pointer; font:inherit; font-weight:650; }
+    #hfAuthSubmit { background:#8b7cff; color:#111323; }
+    #hfGoogleLogin { background:#f4f5f8; color:#202333; }
+    #hfAuthSwitch { background:#292f42; color:#e6e9f2; }
+    #hfAuthStatus { min-height:20px; margin-top:13px !important; font-size:13px; overflow-wrap:anywhere; }
+    #hfAuthMode { font-size:13px; color:#aeb7cd; margin-top:14px !important; }
+    #hfAccountBar { position:fixed; z-index:9998; right:12px; top:12px; display:flex; gap:8px; align-items:center; max-width:calc(100% - 24px); background:#171b29ee; border:1px solid #353c51; border-radius:12px; padding:8px 10px; color:#f7f8fc; font:12px system-ui,sans-serif; }
+    #hfAccountEmail { max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #hfAccountBar button { background:#343b51; color:white; border:0; border-radius:7px; padding:7px 9px; cursor:pointer; }
+    @media(max-width:520px) { #hfAccountBar { top:auto; bottom:10px; right:10px; } #hfAuthCard { padding:20px; } }
+  </style>
+
+  <div id="hfAccountBar" hidden>
+    <span id="hfCloudStatus">Not signed in</span>
+    <span id="hfAccountEmail"></span>
+    <button id="hfSignOut" type="button">Sign out</button>
+  </div>
+
+  <div id="hfAuthGate">
+    <section id="hfAuthCard" role="dialog" aria-modal="true" aria-labelledby="hfAuthTitle">
+      <h2 id="hfAuthTitle">HabitFlow</h2>
+      <p id="hfAuthIntro">Sign in to save your habits, study progress, settings, and auras to your account and access them on other devices.</p>
+      <div id="hfFirebaseSetupNotice" hidden>
+        <p><strong>Firebase setup required.</strong> Add your Firebase web app configuration to this file, enable Google and Email/Password sign-in, and create the Firestore database. Follow the setup guide included with this download.</p>
+      </div>
+      <form id="hfAuthForm">
+        <label for="hfEmail">Email address</label>
+        <input id="hfEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <label for="hfPassword">Password</label>
+        <input id="hfPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="At least 6 characters">
+        <button id="hfAuthSubmit" type="submit">Sign in</button>
+      </form>
+      <button id="hfGoogleLogin" type="button">Continue with Google</button>
+      <button id="hfAuthSwitch" type="button">Need an account? Create one</button>
+      <p id="hfAuthStatus" role="status" aria-live="polite">Cloud account required. Your local data will not be imported into new accounts.</p>
+      <p id="hfAuthMode">New accounts start fresh. Each account has its own private cloud save.</p>
+    </section>
+  </div>
+
+  <div class="app">
+    <header>
+      <div class="brand"><div class="brand-mark">✓</div><span>HabitFlow</span></div>
+      <div class="date-chip" id="dateChip">Your daily reset</div>
+    </header>
+
+    <main>
+      <section class="page active" id="todayPage">
+        <p class="eyebrow">A little progress every day</p>
+        <h1>Your Daily Routine</h1>
+        <p class="subtitle">Build consistency, one small action at a time.</p>
+
+        <div class="today-grid">
+          <div class="card">
+            <div class="card-head">
+              <div><h2>Today's habits</h2><p class="muted small" style="margin:6px 0 0">Make today count.</p></div>
+              <span class="small muted" id="habitCount">0 of 4 done</span>
+            </div>
+            <div class="habit-list" id="habitList"></div>
+            <form id="addHabitForm" style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+              <input id="newHabitName" type="text" maxlength="60" placeholder="Add your own habit…" aria-label="New habit name" required style="flex:1;min-width:150px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font:inherit">
+              <button class="btn btn-primary" type="submit">+ Add habit</button>
+            </form>
+            <p class="muted small" style="margin:8px 0 0">Customize your routine: add, rename, or remove habits to fit your own goals.</p>
+            <div style="margin-top:25px">
+              <div class="card-head" style="margin-bottom:0"><h2>Today's progress</h2><strong class="progress-number" id="progressPercent">0%</strong></div>
+              <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+              <div class="progress-meta"><span id="progressMessage">Start with one habit.</span><span id="habitTotalLabel">0 habits</span></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="card quote">
+              <p class="eyebrow">Your reminder</p>
+              <h2>Small steps create lasting change.</h2>
+              <p>You don't have to do everything perfectly. Just keep showing up.</p>
+            </div>
+            <div class="mini-stats">
+              <div class="mini-stat"><strong id="todayDone">0/0</strong><span>Habits completed</span></div>
+              <div class="mini-stat"><strong id="todayStudy">0 min</strong><span>Study time today</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="focusPage">
+        <p class="eyebrow">Protect your attention</p>
+        <h1>Focus time</h1>
+        <p class="subtitle">One task. One session. Make it count.</p>
+        <div class="focus-layout">
+          <div class="card timer-card">
+            <p class="eyebrow">Focus session</p>
+            <h2>Time to concentrate</h2>
+            <div class="timer-ring" id="timerRing">
+              <div class="timer-inner"><div class="timer-time" id="timerDisplay">25:00</div><div class="timer-caption" id="timerCaption">Ready when you are</div></div>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-primary" id="startBtn">Start focus</button>
+              <button class="btn btn-secondary" id="pauseBtn" disabled>Pause</button>
+              <button class="btn btn-quiet" id="resetBtn">Reset</button>
+            </div>
+            <div class="notice">Tip: choose one task and silence distractions until the session ends.</div>
+          </div>
+          <div class="card">
+            <p class="eyebrow">Your effort adds up</p>
+            <h2>Focus summary</h2>
+            <div class="mini-stats">
+              <div class="mini-stat"><strong id="focusMinutes">0</strong><span>Total study minutes</span></div>
+              <div class="mini-stat"><strong id="focusSessions">0</strong><span>Sessions completed</span></div>
+            </div>
+            <div class="session-list">
+              <div class="session-row"><span class="muted small">Session length</span><strong>25 minutes</strong></div>
+              <div class="session-row"><span class="muted small">Completed today</span><strong id="sessionsToday">0</strong></div>
+            </div>
+
+            <div class="music-player">
+              <div class="music-top">
+                <div class="music-art">♫</div>
+                <div class="music-info"><strong>Lo-fi focus beat</strong><span>Original, mellow instrumental generated in this page</span></div>
+              </div>
+              <div class="music-visual" id="musicVisual" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+              <div class="music-controls">
+                <button class="music-toggle" id="musicToggle" aria-label="Play lo-fi music">▶</button>
+                <input id="musicVolume" type="range" min="0" max="100" value="35" aria-label="Music volume">
+                <span class="small muted" id="volumeLabel">35%</span>
+              </div>
+              <div class="music-status" id="musicStatus">Press play to start the built-in lo-fi loop. No YouTube or external music player is used.</div>
+            </div>
+
+            <p class="notice">Your progress is saved in this browser on this device.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="progressPage">
+        <p class="eyebrow">Look how far you've come</p>
+        <h1>Your progress</h1>
+        <p class="subtitle">A clear view of your habits and study sessions.</p>
+        <div class="today-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div class="card"><p class="eyebrow">Today's habits</p><div class="stat-value" id="statsHabits">0/0</div><p class="muted small">Habits completed today</p></div>
+          <div class="card"><p class="eyebrow">Completion rate</p><div class="stat-value" id="statsPercent">0%</div><p class="muted small">Of today's habits completed</p></div>
+          <div class="card"><p class="eyebrow">Study time</p><div class="stat-value" id="statsMinutes">0 min</div><p class="muted small">Total tracked study time</p></div>
+          <div class="card"><p class="eyebrow">Focus sessions</p><div class="stat-value" id="statsSessions">0</div><p class="muted small">Sessions completed</p></div>
+        </div>
+        <div class="card" style="margin-top:22px">
+          <div class="card-head"><div><h2>Study activity</h2><p class="muted small" style="margin:6px 0 0">Minutes studied over the last 7 days</p></div><span class="small muted">Weekly view</span></div>
+          <div class="chart" id="weeklyChart"></div>
+          <div class="notice">The chart updates when you complete a 25-minute focus session. No sample data is added.</div>
+        </div>
+      </section>
+
+      <section class="page" id="rewardsPage">
+        <p class="eyebrow">Your effort becomes your luck</p>
+        <h1>Aura Roll</h1>
+        <p class="subtitle">A little Sol’s RNG energy for real-life progress. Complete habits, earn spins, and roll for auras.</p>
+        <div class="spin-hero" style="margin-top:26px">
+          <span class="level-pill">✦ HABITFLOW RNG</span>
+          <div class="spin-count"><span id="spinCount">0</span> <span style="font-size:20px;letter-spacing:0">spins</span></div>
+          <p style="color:#e1d8f7;line-height:1.6;margin:0 0 18px">Earn 5 spins for each habit you complete (once per habit each day), plus 5 spins for every completed 25-minute focus session. No paying, no penalties—just progress.</p>
+          <div class="ultimate-progress-wrap" aria-live="polite">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><strong>✦ Ultimate Luck Charge</strong><strong id="ultimateProgressLabel">0 / 1000</strong></div>
+            <div class="ultimate-progress-track" role="progressbar" aria-label="Ultimate Luck Charge" aria-valuemin="0" aria-valuemax="1000" aria-valuenow="0" id="ultimateProgressBar"><div class="ultimate-progress-fill" id="ultimateProgressFill"></div></div>
+            <p class="small" style="margin:0;color:#e1d8f7">Sell duplicate auras to fill the meter. Every full meter grants an Ultimate Spin with 3× luck.</p>
+            <button class="ultimate-spin-btn" id="ultimateSpinButton" type="button" disabled>✦ ULTIMATE SPIN · 0 AVAILABLE</button>
+          </div>
+          <div class="spin-actions"><button class="spin-btn" id="spinButton" type="button">✦ ROLL AURA</button><button class="auto-spin-btn" id="autoSpinButton" type="button" aria-pressed="false">AUTO SPIN: OFF</button></div>
+          <div class="case-reel" id="caseReel" aria-label="Aura case rolling reel">
+            <div class="case-pointer"></div>
+            <div class="case-window"><div class="case-track" id="caseTrack"></div></div>
+            <div class="case-status" id="caseStatus">READY TO ROLL</div>
+          </div>
+          <div class="aura-result" id="auraResult" aria-live="polite"><div class="aura-icon" id="auraResultIcon">✨</div><div class="aura-rarity" id="auraResultRarity">COMMON</div><div class="aura-name" id="auraResultName">Starter Glow</div><p id="auraResultDesc" style="color:#e1d8f7;margin:0">Your journey begins.</p></div>
+        </div>
+        <div class="reward-grid">
+          <div class="card">
+            <p class="eyebrow">Rarity rebalance</p><h2>Top-tier auras are genuinely rare</h2>
+            <div class="odds-list">
+              <div class="odds-row"><span class="rarity-common">Common / Uncommon</span><strong>Most likely</strong></div>
+              <div class="odds-row"><span class="rarity-rare">Rare / Epic</span><strong>Uncommon drops</strong></div>
+              <div class="odds-row"><span class="rarity-legendary">Legendary</span><strong>Rare</strong></div>
+              <div class="odds-row"><span class="rarity-mythic">Mythic</span><strong>Very rare</strong></div>
+              <div class="odds-row"><span class="rarity-divine">Divine</span><strong>Extremely rare</strong></div>
+              <div class="odds-row"><span class="rarity-secret">Secret and above</span><strong>Ultra rare</strong></div>
+            </div>
+            <p class="muted small" style="line-height:1.6;margin-bottom:0">Higher-tier auras are now substantially rarer. Luck helps, but cannot make top rarities common.</p>
+            <div class="card" style="margin-top:14px;padding:14px;background:var(--bg)">
+              <div class="card-head"><div><h2>📖 Aura Logbook</h2><p class="muted small" style="margin:5px 0 0">Unique auras discovered in each rarity tier</p></div></div>
+              <div id="rarityLogbook" class="odds-list" aria-live="polite"></div>
+            </div>
+          </div>
+          <div class="card">
+            <p class="eyebrow">Your roll history</p><h2>Collection stats</h2>
+            <div class="session-list" style="margin-top:16px">
+              <div class="session-row"><span>Auras discovered</span><strong id="auraDiscovered">0 / 151</strong></div>
+              <div class="session-row"><span>Total rolls used</span><strong id="rollsUsed">0</strong></div>
+              <div class="session-row"><span>Best rarity</span><strong id="bestRarity">None yet</strong></div>
+            </div>
+            <p class="muted small" style="line-height:1.6;margin-bottom:0">Your collection and unused spins stay saved in this browser on this device.</p>
+          </div>
+        </div>
+<div class="card" style="margin-top:20px">
+          <p class="eyebrow">Forge your collection</p><h2>Gear Forge · 21 tiers</h2>
+          <p class="muted small" style="line-height:1.6">Every aura roll also finds crafting materials. Combine your discovered auras with items to craft gear. Craft each tier in order; the final reward is the Milo Gauntlet.</p>
+          <p class="muted small" id="totalLuckBoost" style="font-weight:700">Total Gear Luck Boost: +0%</p>
+          <div class="item-pouch" id="itemPouch"></div>
+          <h3 style="margin:18px 0 4px">Equipped loadout</h3>
+          <p class="muted small" style="margin:0">You can equip ONLY ONE gear item total. Unequip it before choosing another. Only your single equipped item gives its luck bonus and activates its ability; choose lower-tier gear whenever you prefer its ability.</p>
+          <div class="item-pouch" id="equippedGearSummary"></div>
+          <div class="gear-grid" id="gearGrid"></div>
+          <p class="notice" id="gearNotice" aria-live="polite">Roll auras to collect materials, then craft your first gear.</p>
+        </div>
+      </section>
+
+      <section class="page" id="inventoryPage">
+        <p class="eyebrow">Your items, your next big roll</p>
+        <h1>Inventory</h1>
+        <p class="subtitle">Your habit collection and potions live in your bag. Craft a potion, then press Use Potion on that same card when you want its boost. Potions affect your actual aura odds.</p>
+        <div class="card" style="margin-top:22px">
+          <p class="eyebrow">Active effect</p><h2>Luck Potion Status</h2>
+          <div id="activePotionStatus" class="inventory-status" aria-live="polite">No potion active.</div>
+        </div>
+                <div class="card" style="margin-top:20px">
+          <p class="eyebrow">Aura Bag</p><h2>Your Habit Collection</h2>
+          <p class="muted small">Your entire habit collection is stored in this bag, including duplicates; undiscovered auras stay hidden until found. Crafting and selling update these counts automatically.</p>
+          <p class="muted small" id="sellNotice" aria-live="polite">Sell duplicate auras to charge Ultimate Spins. Higher rarities give more charge. Keep at least one copy of each aura.</p>
+          <h3 style="margin:18px 0 10px">Potion-Crafting Auras</h3>
+          <p class="muted small">Auras used as ingredients in at least one potion recipe. Sell duplicate copies here while keeping one of each aura.</p>
+          <button type="button" class="sell-aura-btn" id="sellPotionAuraDuplicates" style="margin:0 0 12px">SELL DUPLICATES · POTION AURAS</button>
+          <div class="aura-collection" id="potionCraftAuras"></div>
+          <h3 style="margin:24px 0 10px">Other Auras</h3>
+          <p class="muted small">Auras that are not currently used in potion recipes.</p>
+          <button type="button" class="sell-aura-btn" id="sellAllOtherAuras" style="margin:0 0 12px">SELL ALL OTHER AURAS · KEEP ONE EACH</button>
+          <div class="aura-collection" id="otherAuras"></div>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <p class="eyebrow">Alchemy bag</p><h2>Potions in Your Bag</h2>
+          <p class="muted small">Potions you already crafted appear here. Use one when you're ready; only one potion effect can be active at a time.</p>
+          <div class="inventory-grid" id="ownedPotionGrid"></div>
+          <div class="potion-empty" id="ownedPotionEmpty">No potions in your bag yet. Craft one from the recipe list below.</div>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <p class="eyebrow">Alchemy table</p><h2>Potion Recipes</h2>
+          <p class="muted small">Recipes are ordered from the lowest luck boost to the highest. Each card shows required auras and how many you own. Craft the same potion multiple times, then use one from your bag when ready.</p>
+          <p class="notice" id="potionNotice" aria-live="polite">Collect auras from Aura Roll to start brewing.</p>
+          <div class="potion-section"><div class="potion-recipe-grid" id="potionRecipeGrid"></div></div>
+          <p class="muted small" id="potionCraftEmpty" style="display:none">No potion recipes available.</p>
+        </div>
+
+      </section>
+
+      <section class="page" id="settingsPage">
+        <p class="eyebrow">Make HabitFlow yours</p>
+        <h1>Settings</h1>
+        <p class="subtitle">Adjust study mode, audio levels, and redeem a code.</p>
+        <div class="card" style="margin-top:22px">
+          <p class="eyebrow">Audio</p>
+          <h2>Volume controls</h2>
+          <div style="margin-top:18px">
+            <div class="settings-row"><label for="settingsMusicVolume"><strong>Lo-fi music volume</strong></label><span class="settings-value" id="settingsMusicVolumeLabel">35%</span></div>
+            <input class="settings-range" id="settingsMusicVolume" type="range" min="0" max="100" value="35" aria-label="Lo-fi music volume">
+            <p class="muted small">Controls the built-in focus music. Set it to 0 to mute the music.</p>
+          </div>
+          <div style="margin-top:18px">
+            <div class="settings-row"><label for="settingsEffectsVolume"><strong>Roll sound effects</strong></label><span class="settings-value" id="settingsEffectsVolumeLabel">100%</span></div>
+            <input class="settings-range" id="settingsEffectsVolume" type="range" min="0" max="100" value="100" aria-label="Roll sound effects volume">
+            <p class="muted small">Controls the ticking sounds while rolling for auras. Set it to 0 to mute them.</p>
+          </div>
+          <div style="margin-top:18px">
+            <div class="settings-row"><label for="settingsCutsceneVolume"><strong>Aura cutscene volume</strong></label><span class="settings-value" id="settingsCutsceneVolumeLabel">100%</span></div>
+            <input class="settings-range" id="settingsCutsceneVolume" type="range" min="0" max="100" value="100" aria-label="Aura cutscene volume">
+            <p class="muted small">Controls reveal sounds during aura cutscenes, separately from roll ticking sounds.</p>
+          </div>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <p class="eyebrow">Study mode</p>
+          <h2>Keyboard shortcut</h2>
+          <label style="display:flex;align-items:flex-start;gap:12px;margin-top:14px;cursor:pointer">
+            <input id="settingsEnableF9" type="checkbox" checked style="width:18px;height:18px;margin-top:3px;accent-color:var(--green)">
+            <span><strong>Enable F9 to hide the game</strong><span class="muted small" style="display:block;margin-top:4px;line-height:1.5">Press F9 to hide Aura Roll and Inventory, leaving your habits, focus timer, and progress graph visible. Press F9 again to show the game.</span></span>
+          </label>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <p class="eyebrow">Redeem rewards</p>
+          <h2>Code</h2>
+          <p class="muted small">Enter a code below to claim its reward. Each code can be redeemed once in this browser.</p>
+          <form id="redeemCodeForm" style="margin-top:14px">
+            <label for="redeemCode"><strong>Enter code</strong></label>
+            <input class="reward-input" id="redeemCode" type="text" placeholder="Enter a code" autocomplete="off" maxlength="60" aria-label="Enter reward code">
+            <button class="btn btn-primary" type="submit" style="margin-top:12px">Redeem code</button>
+            <p id="redeemCodeMessage" class="code-message" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+      <section class="page" id="leaderboardPage">
+        <p class="eyebrow">Compete worldwide</p>
+        <h1>Global Leaderboard</h1>
+        <p class="subtitle">Compare your HabitFlow points with other players using accounts in this Firebase project.</p>
+        <div class="card" style="margin-top:18px">
+          <div class="card-head"><div><h2>Your ranking</h2><p class="muted small" style="margin:6px 0 0">Earn points by completing habits and focus sessions.</p></div></div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0">
+            <div class="stat-card"><div class="stat-label">Your points</div><div class="stat-value" id="lbMyScore">—</div></div>
+            <div class="stat-card"><div class="stat-label">Habits done</div><div class="stat-value" id="lbMyHabits">—</div></div>
+            <div class="stat-card"><div class="stat-label">Focus minutes</div><div class="stat-value" id="lbMyMinutes">—</div></div>
+          </div>
+          <button class="btn btn-primary" id="lbRefresh" type="button">Update my score & refresh</button>
+          <p class="muted small" id="lbStatus" role="status" style="margin-top:12px">Sign in and configure the leaderboard rules to load global rankings.</p>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <div class="card-head"><div><h2>Top players</h2><p class="muted small" style="margin:6px 0 0">Top 20 accounts, ranked by points.</p></div></div>
+          <div id="lbRows" style="margin-top:14px"><p class="muted small">Leaderboard has not loaded yet.</p></div>
+          <p class="notice">Points are a friendly competition metric, not a verified measure of real-world effort. This browser-based version can be manipulated by users who modify their local data; a fully cheat-resistant leaderboard requires server-side score validation.</p>
+        </div>
+      </section>
+    </main>
+    <footer>Made for steady progress, not perfection.<br><span class="creator-credit">Website by HolynChoi</span></footer>
+  </div>
+
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <button class="nav-btn active" data-page="todayPage"><span class="nav-icon">☑</span><span>Today</span></button>
+    <button class="nav-btn" data-page="focusPage"><span class="nav-icon">◷</span><span>Focus</span></button>
+    <button class="nav-btn" data-page="progressPage"><span class="nav-icon">▥</span><span>Progress</span></button>
+    <button class="nav-btn" data-page="leaderboardPage"><span class="nav-icon">🏆</span><span>Global</span></button>
+    <button class="nav-btn" data-page="inventoryPage"><span class="nav-icon">🎒</span><span>Inventory</span></button>
+    <button class="nav-btn" data-page="rewardsPage"><span class="nav-icon">✦</span><span>Rewards</span></button>
+    <button class="nav-btn" data-page="settingsPage"><span class="nav-icon">⚙</span><span>Settings</span></button>
+  </nav>
+
+  <script>
+    const DEFAULT_HABITS = [
+      { id: "water", name: "Complete Homework", icon: "✍️" },
+      { id: "study", name: "Study for 45 Minutes", icon: "📚" },
+      { id: "read", name: "Read 10 Pages", icon: "📖" },
+      { id: "prepare", name: "Prepare for Tomorrow", icon: "🌱" }
+    ];
+    const HABITS_KEY = "habitflow-custom-habits-v1";
+    let habitDefinitions;
+    try {
+      const savedHabits = JSON.parse(localStorage.getItem(HABITS_KEY));
+      habitDefinitions = Array.isArray(savedHabits) ? savedHabits : DEFAULT_HABITS.map(h => ({...h}));
+      if (!habitDefinitions.length) habitDefinitions = DEFAULT_HABITS.map(h => ({...h}));
+    } catch { habitDefinitions = DEFAULT_HABITS.map(h => ({...h})); }
+    const saveHabitDefinitions = () => {
+      try { localStorage.setItem(HABITS_KEY, JSON.stringify(habitDefinitions)); } catch (error) { console.warn("Could not save custom habits", error); }
+    };
+    const STORAGE_KEY = "habitflow-data-v1";
+    const todayKey = (date = new Date()) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+    const freshData = () => ({ habitsByDate: {}, studyByDate: {}, totalSessions: 0, totalMinutes: 0 });
+    let data;
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      data = saved && typeof saved === "object" ? { ...freshData(), ...saved } : freshData();
+      if (!data.habitsByDate || typeof data.habitsByDate !== "object") data.habitsByDate = {};
+      if (!data.studyByDate || typeof data.studyByDate !== "object") data.studyByDate = {};
+      if (!Number.isFinite(data.totalSessions)) data.totalSessions = 0;
+      if (!Number.isFinite(data.totalMinutes)) data.totalMinutes = 0;
+    } catch { data = freshData(); }
+
+    function save() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+      catch (error) { console.warn("Browser storage unavailable", error); }
+    }
+    function currentHabits() {
+      if (!data.habitsByDate[todayKey()]) data.habitsByDate[todayKey()] = {};
+      return data.habitsByDate[todayKey()];
+    }
+    function currentStudyMinutes() { return data.studyByDate[todayKey()] || 0; }
+    function openHabitDetails(definition, checkbox) {
+      const overlay = document.createElement("div");
+      overlay.setAttribute("role", "presentation");
+      Object.assign(overlay.style, { position:"fixed", inset:"0", zIndex:"9999", background:"rgba(16,30,22,.48)", display:"grid", placeItems:"center", padding:"20px" });
+      const panel = document.createElement("section");
+      panel.setAttribute("role", "dialog");
+      panel.setAttribute("aria-modal", "true");
+      panel.setAttribute("aria-labelledby", "habitDetailTitle");
+      Object.assign(panel.style, { width:"min(100%, 420px)", background:"var(--card, #fff)", color:"var(--text, #20352a)", borderRadius:"20px", padding:"25px", boxShadow:"0 24px 70px rgba(0,0,0,.22)" });
+      const close = document.createElement("button");
+      close.type = "button"; close.textContent = "×"; close.setAttribute("aria-label", "Close task details");
+      Object.assign(close.style, { float:"right", border:"0", background:"transparent", fontSize:"27px", cursor:"pointer", color:"inherit" });
+      const icon = document.createElement("div"); icon.textContent = definition.icon || "✦";
+      Object.assign(icon.style, { width:"48px", height:"48px", display:"grid", placeItems:"center", borderRadius:"14px", background:"var(--green-soft, #e7f2ea)", fontSize:"24px", marginBottom:"14px" });
+      const title = document.createElement("h2"); title.id = "habitDetailTitle"; title.textContent = definition.name;
+      title.style.margin = "0 0 10px";
+      const status = document.createElement("p"); status.textContent = checkbox.checked ? "Status: Completed today" : "Status: Not completed yet";
+      Object.assign(status.style, { fontSize:"13px", fontWeight:"650", margin:"0 0 18px" });
+      const actions = document.createElement("div"); Object.assign(actions.style, { display:"flex", gap:"10px", justifyContent:"flex-end", flexWrap:"wrap" });
+      const closeBtn = document.createElement("button"); closeBtn.type="button"; closeBtn.textContent="Close"; closeBtn.className="btn btn-quiet";
+      const dismiss = () => { overlay.remove(); };
+      close.addEventListener("click", dismiss); closeBtn.addEventListener("click", dismiss);
+      overlay.addEventListener("click", event => { if (event.target === overlay) dismiss(); });
+      panel.append(close, icon, title, status, actions); actions.append(closeBtn); overlay.appendChild(panel); document.body.appendChild(overlay); closeBtn.focus();
+      const escapeHandler = event => { if (event.key === "Escape" && overlay.isConnected) { dismiss(); document.removeEventListener("keydown", escapeHandler); } };
+      document.addEventListener("keydown", escapeHandler);
+    }
+
+    function renderHabits() {
+      const habits = currentHabits();
+      const list = document.getElementById("habitList");
+      list.innerHTML = "";
+      habitDefinitions.forEach(definition => {
+        const row = document.createElement("div");
+        row.className = "habit" + (habits[definition.id] ? " done" : "");
+        row.tabIndex = 0;
+        row.setAttribute("role", "button");
+        row.setAttribute("aria-label", "Open details for " + definition.name);
+        row.addEventListener("click", event => {
+          if (event.target.closest("input, button")) return;
+          checkbox.checked = !checkbox.checked;
+          checkbox.dispatchEvent(new Event("change", { bubbles:true }));
+        });
+        row.addEventListener("keydown", event => {
+          if ((event.key === "Enter" || event.key === " ") && event.target === row) {
+            event.preventDefault();
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event("change", { bubbles:true }));
+          }
+        });
+        row.style.display = "flex";
+        row.style.alignItems = "center";
+        row.style.gap = "10px";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = Boolean(habits[definition.id]);
+        checkbox.setAttribute("aria-label", "Complete " + definition.name);
+        checkbox.addEventListener("change", () => {
+          const wasDone = Boolean(currentHabits()[definition.id]);
+          currentHabits()[definition.id] = checkbox.checked;
+          if (checkbox.checked && !wasDone) {
+            data.totalHabitCompletions = (data.totalHabitCompletions || 0) + 1;
+            if (!gacha.habitRewardsByDate || typeof gacha.habitRewardsByDate !== "object") gacha.habitRewardsByDate = {};
+            if (!gacha.habitRewardsByDate[todayKey()]) gacha.habitRewardsByDate[todayKey()] = [];
+            // Each habit can award spins only once per day, preventing uncheck/recheck farming.
+            if (!gacha.habitRewardsByDate[todayKey()].includes(definition.id)) {
+              gacha.spins += 5;
+              gacha.habitRewardsByDate[todayKey()].push(definition.id);
+              saveGacha();
+            }
+          }
+          save(); renderHabits();
+        });
+        const icon = document.createElement("span");
+        icon.className = "habit-icon"; icon.textContent = definition.icon || "✓";
+        const name = document.createElement("span");
+        name.className = "habit-label"; name.textContent = definition.name;
+        name.style.flex = "1";
+        const edit = document.createElement("button");
+        edit.type = "button"; edit.className = "btn btn-quiet"; edit.textContent = "Edit";
+        edit.setAttribute("aria-label", "Rename " + definition.name);
+        edit.addEventListener("click", () => {
+          const revised = prompt("Change this habit to:", definition.name);
+          if (revised === null) return;
+          const trimmed = revised.trim();
+          if (!trimmed) { alert("Habit name cannot be empty."); return; }
+          definition.name = trimmed.slice(0, 60); saveHabitDefinitions(); renderHabits();
+        });
+        const remove = document.createElement("button");
+        remove.type = "button"; remove.className = "btn btn-quiet"; remove.textContent = "×";
+        remove.setAttribute("aria-label", "Remove " + definition.name);
+        remove.addEventListener("click", () => {
+          if (!confirm(`Remove “${definition.name}” from your habit list?`)) return;
+          habitDefinitions = habitDefinitions.filter(h => h.id !== definition.id);
+          Object.values(data.habitsByDate).forEach(day => { if (day) delete day[definition.id]; });
+          saveHabitDefinitions(); save(); renderHabits();
+        });
+        row.append(checkbox, icon, name, edit, remove);
+        list.appendChild(row);
+      });
+      const count = habitDefinitions.filter(item => habits[item.id]).length;
+      const total = habitDefinitions.length;
+      const percent = total ? Math.round(count / total * 100) : 0;
+      document.getElementById("habitCount").textContent = `${count} of ${total} done`;
+      document.getElementById("progressPercent").textContent = `${percent}%`;
+      document.getElementById("progressFill").style.width = `${percent}%`;
+      document.getElementById("progressMessage").textContent = count === 0 ? "Start with one habit." : count === total ? "All done — great work!" : "You're making progress.";
+      document.getElementById("todayDone").textContent = `${count}/${total}`;
+      document.getElementById("todayStudy").textContent = `${currentStudyMinutes()} min`;
+      document.getElementById("statsHabits").textContent = `${count}/${total}`;
+      document.getElementById("statsPercent").textContent = `${percent}%`;
+      document.getElementById("habitTotalLabel").textContent = `${total} ${total === 1 ? "habit" : "habits"}`;
+      renderRewards();
+    }
+
+    document.getElementById("addHabitForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const input = document.getElementById("newHabitName");
+      const name = input.value.trim();
+      if (!name) return;
+      if (habitDefinitions.length >= 20) { alert("You can add up to 20 habits."); return; }
+      habitDefinitions.push({ id: "habit-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7), name: name.slice(0, 60), icon: "✦" });
+      saveHabitDefinitions(); input.value = ""; renderHabits();
+    });
+
+    const GACHA_KEY = "habitflow-aura-rng-v1";
+    const AURAS = [
+      // Weights sum to 10,000; probabilities are fixed and visible in the odds panel.
+      {id:"starter",name:"Starter Glow",icon:"✨",rarity:"Common",weight:1000,desc:"Every legend starts somewhere."},
+      {id:"leaf",name:"Leaf Spirit",icon:"🍃",rarity:"Common",weight:1000,desc:"A calm little boost."},
+      {id:"cloud",name:"Cloud Nine",icon:"☁️",rarity:"Common",weight:1000,desc:"One step at a time."},
+      {id:"ember",name:"Tiny Ember",icon:"🔥",rarity:"Common",weight:1000,desc:"A small spark can start a fire."},
+      {id:"bubble",name:"Bubble Pop",icon:"🫧",rarity:"Uncommon",weight:500,desc:"Keep your momentum light."},
+      {id:"sunny",name:"Sunny Side",icon:"☀️",rarity:"Uncommon",weight:500,desc:"You showed up. That counts."},
+      {id:"tidal",name:"Tidal Wave",icon:"🌊",rarity:"Uncommon",weight:500,desc:"Consistency has momentum."},
+      {id:"bloom",name:"Bloom Aura",icon:"🌸",rarity:"Uncommon",weight:500,desc:"Small habits, real growth."},
+      {id:"mint",name:"Minty Fresh",icon:"🍀",rarity:"Uncommon",weight:500,desc:"A fresh start, whenever you need it."},
+      {id:"candy",name:"Candyfloss",icon:"🍬",rarity:"Rare",weight:300,desc:"Sweet rewards for steady effort."},
+      {id:"frost",name:"Frostbite",icon:"❄️",rarity:"Rare",weight:300,desc:"Cool focus under pressure."},
+      {id:"thunder",name:"Thunderstruck",icon:"⚡",rarity:"Rare",weight:300,desc:"You brought the energy."},
+      {id:"cosmic",name:"Cosmic Drift",icon:"🌌",rarity:"Rare",weight:300,desc:"Your orbit is changing."},
+      {id:"cherry",name:"Cherry Blossom",icon:"🌺",rarity:"Rare",weight:300,desc:"Progress looks good on you."},
+      {id:"sakura",name:"Sakura Storm",icon:"🌸",rarity:"Rare",weight:300,desc:"Grace with a little power."},
+      {id:"neon",name:"Neon Pulse",icon:"💜",rarity:"Epic",weight:200,desc:"Your grind has its own frequency."},
+      {id:"phantom",name:"Phantom Step",icon:"👻",rarity:"Epic",weight:200,desc:"Quiet work, loud results."},
+      {id:"solar",name:"Solar Flare",icon:"🌞",rarity:"Epic",weight:200,desc:"You are building your own momentum."},
+      {id:"abyss",name:"Abyssal Tide",icon:"🌀",rarity:"Epic",weight:200,desc:"Deep focus unlocked."},
+      {id:"crystal",name:"Crystal Heart",icon:"💎",rarity:"Epic",weight:200,desc:"A little discipline, a lot of shine."},
+      {id:"storm",name:"Tempest",icon:"🌩️",rarity:"Legendary",weight:125,desc:"You kept going through the storm."},
+      {id:"aurora",name:"Aurora Veil",icon:"🌈",rarity:"Legendary",weight:125,desc:"A rare light for a consistent player."},
+      {id:"dragon",name:"Dragonfire",icon:"🐉",rarity:"Legendary",weight:125,desc:"A legendary effort deserves a legendary aura."},
+      {id:"starlight",name:"Starlight Crown",icon:"🌟",rarity:"Legendary",weight:125,desc:"One step closer to the stars."},
+      {id:"moonlit",name:"Moonlit Monarch",icon:"🌙",rarity:"Mythic",weight:25,desc:"Rare, calm, and quietly powerful."},
+      {id:"bloodmoon",name:"Blood Moon",icon:"🌕",rarity:"Mythic",weight:25,desc:"A moonrise worth remembering."},
+      {id:"seraph",name:"Seraphim",icon:"🪽",rarity:"Mythic",weight:25,desc:"Your dedication reached another level."},
+      {id:"overdrive",name:"Overdrive",icon:"💥",rarity:"Mythic",weight:25,desc:"A burst of unstoppable energy."},
+      {id:"glitch",name:"Reality Glitch",icon:"👾",rarity:"Mythic",weight:25,desc:"The odds bent in your favor."},
+      {id:"galaxy",name:"Galaxy Emperor",icon:"🌌",rarity:"Mythic",weight:25,desc:"An entire galaxy in your hands."},
+      {id:"divine",name:"Divine Radiance",icon:"☄️",rarity:"Divine",weight:7,desc:"A once-in-a-while kind of pull."},
+      {id:"zenith",name:"Zenith",icon:"🔱",rarity:"Divine",weight:7,desc:"You reached the absolute peak."},
+      {id:"infinity",name:"Infinity Loop",icon:"♾️",rarity:"Divine",weight:7,desc:"Keep improving. There is no final level."},
+      {id:"eclipse",name:"Total Eclipse",icon:"🌑",rarity:"Divine",weight:7,desc:"A rare shadow across the entire sky."},
+      {id:"worldender",name:"Worldender",icon:"🌋",rarity:"Divine",weight:6,desc:"A pull that changes the whole collection."},
+      {id:"glitchcore",name:"Glitchcore",icon:"🪩",rarity:"Divine",weight:6,desc:"Reality briefly forgot the rules."},
+      {id:"developer",name:"Developer's Secret",icon:"🧿",rarity:"Secret",weight:3,desc:"You found the hidden side of the universe."},
+      {id:"singularity",name:"Singularity",icon:"🕳️",rarity:"Secret",weight:3,desc:"Everything converges into one impossible pull."},
+      {id:"primordial",name:"Primordial One",icon:"🐲",rarity:"Secret",weight:2,desc:"Older than the stars. Rarer than a legend."},
+      {id:"habitflow",name:"HABITFLOW: ASCENDED",icon:"👑",rarity:"Secret",weight:2,desc:"You turned real effort into something extraordinary."},
+      {id:"milo-ban",name:"MILO BAN",icon:"🐈‍⬛",rarity:"??? SECRET ???",weight:1,desc:"THE IMPOSSIBLE PULL. Milo Ban has appeared. You are never rolling this again. Probably."},
+      {id:"solar-crown",name:"Solar Crown",icon:"👑☀️",rarity:"Legendary",weight:70,desc:"A crown forged from the first light of dawn."},
+      {id:"glacier-king",name:"Glacier King",icon:"🧊👑",rarity:"Legendary",weight:70,desc:"An ancient ruler sealed inside blue ice."},
+      {id:"dragon-sovereign",name:"Dragon Sovereign",icon:"🐲🔥",rarity:"Mythic",weight:18,desc:"A dragon aura burning with royal power."},
+      {id:"lunar-empress",name:"Lunar Empress",icon:"🌙👸",rarity:"Mythic",weight:18,desc:"Moonlight bends to the empress's will."},
+      {id:"void-walker",name:"Void Walker",icon:"🕳️🚶",rarity:"Mythic",weight:18,desc:"A traveler who crosses the space between stars."},
+      {id:"prism-heart",name:"Prism Heart",icon:"💖🌈",rarity:"Divine",weight:5,desc:"A heart refracting a thousand colors."},
+      {id:"celestial-fox",name:"Celestial Fox",icon:"🦊✨",rarity:"Divine",weight:5,desc:"A fox spirit that races across constellations."},
+      {id:"eternal-sun",name:"Eternal Sun",icon:"🌞♾️",rarity:"Secret",weight:2,desc:"A sun that has burned since time began."},
+      {id:"abyssal-dragon",name:"Abyssal Dragon",icon:"🐉🌌",rarity:"Secret",weight:2,desc:"A dragon sleeping beneath the edge of reality."},
+      {id:"julian-thomson",name:"Julian Thomson",icon:"🧑‍🚀🌌",rarity:"??? SECRET ???",weight:1,desc:"An impossible cosmic pull, matching Milo's ultimate rarity."},
+      {id:"beyond-milo",name:"BEYOND MILO: NULL SOVEREIGN",icon:"🌌🐕‍🦺♾️",rarity:"TRANSCENDENT",weight:0.02,desc:"Beyond every known rarity. Even Milo is only a shadow before the Null Sovereign."},
+      {id:"new-mosslight",name:"Mosslight",icon:"🍀",rarity:"Common",weight:850,desc:"A newly discovered common aura, carrying the power of mosslight."},
+      {id:"new-pebble-pulse",name:"Pebble Pulse",icon:"🪨",rarity:"Common",weight:850,desc:"A newly discovered common aura, carrying the power of pebble pulse."},
+      {id:"new-paper-lantern",name:"Paper Lantern",icon:"🏮",rarity:"Common",weight:850,desc:"A newly discovered common aura, carrying the power of paper lantern."},
+      {id:"new-rain-puddle",name:"Rain Puddle",icon:"💧",rarity:"Common",weight:850,desc:"A newly discovered common aura, carrying the power of rain puddle."},
+      {id:"new-dandelion-wish",name:"Dandelion Wish",icon:"🌼",rarity:"Common",weight:850,desc:"A newly discovered common aura, carrying the power of dandelion wish."},
+      {id:"new-cocoa-spark",name:"Cocoa Spark",icon:"☕",rarity:"Common",weight:850,desc:"A newly discovered common aura, carrying the power of cocoa spark."},
+      {id:"new-tiny-comet",name:"Tiny Comet",icon:"☄️",rarity:"Common",weight:850,desc:"A newly discovered common aura, carrying the power of tiny comet."},
+      {id:"new-puddle-jumper",name:"Puddle Jumper",icon:"🐸",rarity:"Common",weight:850,desc:"A newly discovered common aura, carrying the power of puddle jumper."},
+      {id:"new-soft-breeze",name:"Soft Breeze",icon:"🍃",rarity:"Common",weight:850,desc:"A newly discovered common aura, carrying the power of soft breeze."},
+      {id:"new-pocket-stardust",name:"Pocket Stardust",icon:"✨",rarity:"Common",weight:850,desc:"A newly discovered common aura, carrying the power of pocket stardust."},
+      {id:"new-amber-mist",name:"Amber Mist",icon:"🟠",rarity:"Uncommon",weight:430,desc:"A newly discovered uncommon aura, carrying the power of amber mist."},
+      {id:"new-bluebell-aura",name:"Bluebell Aura",icon:"🔔",rarity:"Uncommon",weight:430,desc:"A newly discovered uncommon aura, carrying the power of bluebell aura."},
+      {id:"new-coral-current",name:"Coral Current",icon:"🪸",rarity:"Uncommon",weight:430,desc:"A newly discovered uncommon aura, carrying the power of coral current."},
+      {id:"new-dewdrop-dance",name:"Dewdrop Dance",icon:"💦",rarity:"Uncommon",weight:430,desc:"A newly discovered uncommon aura, carrying the power of dewdrop dance."},
+      {id:"new-firefly-trail",name:"Firefly Trail",icon:"🪲",rarity:"Uncommon",weight:430,desc:"A newly discovered uncommon aura, carrying the power of firefly trail."},
+      {id:"new-honeycomb-glow",name:"Honeycomb Glow",icon:"🍯",rarity:"Uncommon",weight:430,desc:"A newly discovered uncommon aura, carrying the power of honeycomb glow."},
+      {id:"new-jade-ripple",name:"Jade Ripple",icon:"🟢",rarity:"Uncommon",weight:430,desc:"A newly discovered uncommon aura, carrying the power of jade ripple."},
+      {id:"new-koi-spirit",name:"Koi Spirit",icon:"🐟",rarity:"Uncommon",weight:430,desc:"A newly discovered uncommon aura, carrying the power of koi spirit."},
+      {id:"new-lavender-haze",name:"Lavender Haze",icon:"🪻",rarity:"Uncommon",weight:430,desc:"A newly discovered uncommon aura, carrying the power of lavender haze."},
+      {id:"new-maple-drift",name:"Maple Drift",icon:"🍁",rarity:"Uncommon",weight:430,desc:"A newly discovered uncommon aura, carrying the power of maple drift."},
+      {id:"new-neon-koi",name:"Neon Koi",icon:"🐠",rarity:"Rare",weight:240,desc:"A newly discovered rare aura, carrying the power of neon koi."},
+      {id:"new-quartz-bloom",name:"Quartz Bloom",icon:"🔮",rarity:"Rare",weight:240,desc:"A newly discovered rare aura, carrying the power of quartz bloom."},
+      {id:"new-ruby-circuit",name:"Ruby Circuit",icon:"❤️",rarity:"Rare",weight:240,desc:"A newly discovered rare aura, carrying the power of ruby circuit."},
+      {id:"new-silver-comet",name:"Silver Comet",icon:"🌠",rarity:"Rare",weight:240,desc:"A newly discovered rare aura, carrying the power of silver comet."},
+      {id:"new-tiger-spark",name:"Tiger Spark",icon:"🐅",rarity:"Rare",weight:240,desc:"A newly discovered rare aura, carrying the power of tiger spark."},
+      {id:"new-velvet-thunder",name:"Velvet Thunder",icon:"🌩️",rarity:"Rare",weight:240,desc:"A newly discovered rare aura, carrying the power of velvet thunder."},
+      {id:"new-wildfire-crest",name:"Wildfire Crest",icon:"🔥",rarity:"Rare",weight:240,desc:"A newly discovered rare aura, carrying the power of wildfire crest."},
+      {id:"new-xenon-wave",name:"Xenon Wave",icon:"🌊",rarity:"Rare",weight:240,desc:"A newly discovered rare aura, carrying the power of xenon wave."},
+      {id:"new-yellow-nova",name:"Yellow Nova",icon:"🌟",rarity:"Rare",weight:240,desc:"A newly discovered rare aura, carrying the power of yellow nova."},
+      {id:"new-zephyr-wing",name:"Zephyr Wing",icon:"🪽",rarity:"Rare",weight:240,desc:"A newly discovered rare aura, carrying the power of zephyr wing."},
+      {id:"new-arcane-circuit",name:"Arcane Circuit",icon:"🧿",rarity:"Epic",weight:150,desc:"A newly discovered epic aura, carrying the power of arcane circuit."},
+      {id:"new-blacklight-bloom",name:"Blacklight Bloom",icon:"🌺",rarity:"Epic",weight:150,desc:"A newly discovered epic aura, carrying the power of blacklight bloom."},
+      {id:"new-chrome-phantom",name:"Chrome Phantom",icon:"👾",rarity:"Epic",weight:150,desc:"A newly discovered epic aura, carrying the power of chrome phantom."},
+      {id:"new-dream-eater",name:"Dream Eater",icon:"🌙",rarity:"Epic",weight:150,desc:"A newly discovered epic aura, carrying the power of dream eater."},
+      {id:"new-electric-lotus",name:"Electric Lotus",icon:"⚡",rarity:"Epic",weight:150,desc:"A newly discovered epic aura, carrying the power of electric lotus."},
+      {id:"new-feral-galaxy",name:"Feral Galaxy",icon:"🐺",rarity:"Epic",weight:150,desc:"A newly discovered epic aura, carrying the power of feral galaxy."},
+      {id:"new-golden-mirage",name:"Golden Mirage",icon:"🏜️",rarity:"Epic",weight:150,desc:"A newly discovered epic aura, carrying the power of golden mirage."},
+      {id:"new-hollow-prism",name:"Hollow Prism",icon:"💠",rarity:"Epic",weight:150,desc:"A newly discovered epic aura, carrying the power of hollow prism."},
+      {id:"new-ion-tempest",name:"Ion Tempest",icon:"🌪️",rarity:"Epic",weight:150,desc:"A newly discovered epic aura, carrying the power of ion tempest."},
+      {id:"new-jupiter-pulse",name:"Jupiter Pulse",icon:"🪐",rarity:"Epic",weight:150,desc:"A newly discovered epic aura, carrying the power of jupiter pulse."},
+      {id:"new-astral-paladin",name:"Astral Paladin",icon:"🛡️",rarity:"Legendary",weight:65,desc:"A newly discovered legendary aura, carrying the power of astral paladin."},
+      {id:"new-blazing-valkyrie",name:"Blazing Valkyrie",icon:"🔥",rarity:"Legendary",weight:65,desc:"A newly discovered legendary aura, carrying the power of blazing valkyrie."},
+      {id:"new-cobalt-titan",name:"Cobalt Titan",icon:"🔷",rarity:"Legendary",weight:65,desc:"A newly discovered legendary aura, carrying the power of cobalt titan."},
+      {id:"new-dawnbreaker",name:"Dawnbreaker",icon:"🌅",rarity:"Legendary",weight:65,desc:"A newly discovered legendary aura, carrying the power of dawnbreaker."},
+      {id:"new-ember-archon",name:"Ember Archon",icon:"♨️",rarity:"Legendary",weight:65,desc:"A newly discovered legendary aura, carrying the power of ember archon."},
+      {id:"new-frost-monarch",name:"Frost Monarch",icon:"❄️",rarity:"Legendary",weight:65,desc:"A newly discovered legendary aura, carrying the power of frost monarch."},
+      {id:"new-graviton-king",name:"Graviton King",icon:"🪐",rarity:"Legendary",weight:65,desc:"A newly discovered legendary aura, carrying the power of graviton king."},
+      {id:"new-helios-guardian",name:"Helios Guardian",icon:"☀️",rarity:"Legendary",weight:65,desc:"A newly discovered legendary aura, carrying the power of helios guardian."},
+      {id:"new-iron-starfall",name:"Iron Starfall",icon:"☄️",rarity:"Legendary",weight:65,desc:"A newly discovered legendary aura, carrying the power of iron starfall."},
+      {id:"new-jade-leviathan",name:"Jade Leviathan",icon:"🐉",rarity:"Legendary",weight:65,desc:"A newly discovered legendary aura, carrying the power of jade leviathan."},
+      {id:"new-astral-kitsune",name:"Astral Kitsune",icon:"🦊",rarity:"Mythic",weight:16,desc:"A newly discovered mythic aura, carrying the power of astral kitsune."},
+      {id:"new-black-hole-bloom",name:"Black Hole Bloom",icon:"⚫",rarity:"Mythic",weight:16,desc:"A newly discovered mythic aura, carrying the power of black hole bloom."},
+      {id:"new-chrono-dragon",name:"Chrono Dragon",icon:"🐲",rarity:"Mythic",weight:16,desc:"A newly discovered mythic aura, carrying the power of chrono dragon."},
+      {id:"new-dreamstar-oracle",name:"Dreamstar Oracle",icon:"🔭",rarity:"Mythic",weight:16,desc:"A newly discovered mythic aura, carrying the power of dreamstar oracle."},
+      {id:"new-ethereal-ronin",name:"Ethereal Ronin",icon:"🥷",rarity:"Mythic",weight:16,desc:"A newly discovered mythic aura, carrying the power of ethereal ronin."},
+      {id:"new-fallen-seraph",name:"Fallen Seraph",icon:"🪽",rarity:"Mythic",weight:16,desc:"A newly discovered mythic aura, carrying the power of fallen seraph."},
+      {id:"new-ghostlight-emperor",name:"Ghostlight Emperor",icon:"👻",rarity:"Mythic",weight:16,desc:"A newly discovered mythic aura, carrying the power of ghostlight emperor."},
+      {id:"new-hypernova-wolf",name:"Hypernova Wolf",icon:"🐺",rarity:"Mythic",weight:16,desc:"A newly discovered mythic aura, carrying the power of hypernova wolf."},
+      {id:"new-ivory-eclipse",name:"Ivory Eclipse",icon:"🌘",rarity:"Mythic",weight:16,desc:"A newly discovered mythic aura, carrying the power of ivory eclipse."},
+      {id:"new-judgement-flame",name:"Judgement Flame",icon:"🔥",rarity:"Mythic",weight:16,desc:"A newly discovered mythic aura, carrying the power of judgement flame."},
+      {id:"new-aether-crown",name:"Aether Crown",icon:"👑",rarity:"Divine",weight:4,desc:"A newly discovered divine aura, carrying the power of aether crown."},
+      {id:"new-celestial-leviathan",name:"Celestial Leviathan",icon:"🐋",rarity:"Divine",weight:4,desc:"A newly discovered divine aura, carrying the power of celestial leviathan."},
+      {id:"new-destiny-weaver",name:"Destiny Weaver",icon:"🕸️",rarity:"Divine",weight:4,desc:"A newly discovered divine aura, carrying the power of destiny weaver."},
+      {id:"new-eonbreaker",name:"Eonbreaker",icon:"⏳",rarity:"Divine",weight:4,desc:"A newly discovered divine aura, carrying the power of eonbreaker."},
+      {id:"new-first-light",name:"First Light",icon:"🌄",rarity:"Divine",weight:4,desc:"A newly discovered divine aura, carrying the power of first light."},
+      {id:"new-godspark",name:"Godspark",icon:"⚡",rarity:"Divine",weight:4,desc:"A newly discovered divine aura, carrying the power of godspark."},
+      {id:"new-heavenfall",name:"Heavenfall",icon:"🌌",rarity:"Divine",weight:4,desc:"A newly discovered divine aura, carrying the power of heavenfall."},
+      {id:"new-infinite-garden",name:"Infinite Garden",icon:"🌳",rarity:"Divine",weight:4,desc:"A newly discovered divine aura, carrying the power of infinite garden."},
+      {id:"new-jewel-of-creation",name:"Jewel of Creation",icon:"💎",rarity:"Divine",weight:4,desc:"A newly discovered divine aura, carrying the power of jewel of creation."},
+      {id:"new-kingdom-beyond",name:"Kingdom Beyond",icon:"🏰",rarity:"Divine",weight:4,desc:"A newly discovered divine aura, carrying the power of kingdom beyond."},
+      {id:"new-last-star-archive",name:"Last Star Archive",icon:"📚",rarity:"Secret",weight:1.2,desc:"A newly discovered secret aura, carrying the power of last star archive."},
+      {id:"new-miracle-engine",name:"Miracle Engine",icon:"⚙️",rarity:"Secret",weight:1.2,desc:"A newly discovered secret aura, carrying the power of miracle engine."},
+      {id:"new-neverending-dawn",name:"Neverending Dawn",icon:"🌅",rarity:"Secret",weight:1.2,desc:"A newly discovered secret aura, carrying the power of neverending dawn."},
+      {id:"new-origin-flame",name:"Origin Flame",icon:"🔥",rarity:"Secret",weight:1.2,desc:"A newly discovered secret aura, carrying the power of origin flame."},
+      {id:"new-paradox-bloom",name:"Paradox Bloom",icon:"🌸",rarity:"Secret",weight:1.2,desc:"A newly discovered secret aura, carrying the power of paradox bloom."},
+      {id:"new-quiet-singularity",name:"Quiet Singularity",icon:"🕳️",rarity:"Secret",weight:1.2,desc:"A newly discovered secret aura, carrying the power of quiet singularity."},
+      {id:"new-runebound-cosmos",name:"Runebound Cosmos",icon:"🔯",rarity:"Secret",weight:1.2,desc:"A newly discovered secret aura, carrying the power of runebound cosmos."},
+      {id:"new-starless-crown",name:"Starless Crown",icon:"👑",rarity:"Secret",weight:1.2,desc:"A newly discovered secret aura, carrying the power of starless crown."},
+      {id:"new-timeless-monarch",name:"Timeless Monarch",icon:"⏱️",rarity:"Secret",weight:1.2,desc:"A newly discovered secret aura, carrying the power of timeless monarch."},
+      {id:"new-unwritten-fate",name:"Unwritten Fate",icon:"📜",rarity:"Secret",weight:1.2,desc:"A newly discovered secret aura, carrying the power of unwritten fate."},
+      {id:"new-vanta-seraph",name:"Vanta Seraph",icon:"🖤",rarity:"??? SECRET ???",weight:0.35,desc:"A newly discovered ??? secret ??? aura, carrying the power of vanta seraph."},
+      {id:"new-wishing-engine",name:"Wishing Engine",icon:"🧞",rarity:"??? SECRET ???",weight:0.35,desc:"A newly discovered ??? secret ??? aura, carrying the power of wishing engine."},
+      {id:"new-x-null",name:"X-Null",icon:"❎",rarity:"??? SECRET ???",weight:0.35,desc:"A newly discovered ??? secret ??? aura, carrying the power of x-null."},
+      {id:"new-yonder-king",name:"Yonder King",icon:"🌠",rarity:"??? SECRET ???",weight:0.35,desc:"A newly discovered ??? secret ??? aura, carrying the power of yonder king."},
+      {id:"new-zero-hour-god",name:"Zero Hour God",icon:"⌛",rarity:"??? SECRET ???",weight:0.35,desc:"A newly discovered ??? secret ??? aura, carrying the power of zero hour god."},
+      {id:"new-absolute-paradox",name:"Absolute Paradox",icon:"♾️",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of absolute paradox."},
+      {id:"new-beyond-the-last-dawn",name:"Beyond the Last Dawn",icon:"🌌",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of beyond the last dawn."},
+      {id:"new-crown-of-all-worlds",name:"Crown of All Worlds",icon:"🌍",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of crown of all worlds."},
+      {id:"new-endless-origin",name:"Endless Origin",icon:"🌀",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of endless origin."},
+      {id:"new-final-dreamer",name:"Final Dreamer",icon:"💫",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of final dreamer."},
+      {id:"new-genesis-overlord",name:"Genesis Overlord",icon:"🌟",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of genesis overlord."},
+      {id:"new-horizonless",name:"Horizonless",icon:"🌑",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of horizonless."},
+      {id:"new-infinity-without-name",name:"Infinity Without Name",icon:"♾️",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of infinity without name."},
+      {id:"new-jubilee-of-stars",name:"Jubilee of Stars",icon:"🎆",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of jubilee of stars."},
+      {id:"new-kaleidoscope-zero",name:"Kaleidoscope Zero",icon:"🌈",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of kaleidoscope zero."},
+      {id:"new-liminal-creator",name:"Liminal Creator",icon:"🪬",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of liminal creator."},
+      {id:"new-monarch-of-nothing",name:"Monarch of Nothing",icon:"👑",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of monarch of nothing."},
+      {id:"new-nebula-eternal",name:"Nebula Eternal",icon:"🌌",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of nebula eternal."},
+      {id:"new-omega-reverie",name:"Omega Reverie",icon:"💠",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of omega reverie."},
+      {id:"new-prime-unbound",name:"Prime Unbound",icon:"🌠",rarity:"TRANSCENDENT",weight:0.06,desc:"A newly discovered transcendent aura, carrying the power of prime unbound."},
+      {id:"new-ashen-orbit",name:"Ashen Orbit",icon:"🌑",rarity:"Common",weight:18,desc:"A newly discovered common aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-bonsai-spirit",name:"Bonsai Spirit",icon:"🌳",rarity:"Common",weight:18,desc:"A newly discovered common aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-candlewish",name:"Candlewish",icon:"🕯️",rarity:"Common",weight:18,desc:"A newly discovered common aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-driftwood-dream",name:"Driftwood Dream",icon:"🪵",rarity:"Common",weight:18,desc:"A newly discovered common aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-fawnlight",name:"Fawnlight",icon:"🦌",rarity:"Common",weight:18,desc:"A newly discovered common aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-golden-pollen",name:"Golden Pollen",icon:"🌼",rarity:"Common",weight:18,desc:"A newly discovered common aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-harbor-glow",name:"Harbor Glow",icon:"⚓",rarity:"Common",weight:18,desc:"A newly discovered common aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-island-mist",name:"Island Mist",icon:"🏝️",rarity:"Common",weight:18,desc:"A newly discovered common aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-jellybeam",name:"Jellybeam",icon:"🪼",rarity:"Common",weight:18,desc:"A newly discovered common aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-kindred-flame",name:"Kindred Flame",icon:"🪔",rarity:"Common",weight:18,desc:"A newly discovered common aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-lucky-thimble",name:"Lucky Thimble",icon:"🧵",rarity:"Uncommon",weight:10,desc:"A newly discovered uncommon aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-morning-dew",name:"Morning Dew",icon:"🌤️",rarity:"Uncommon",weight:10,desc:"A newly discovered uncommon aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-nimbus-bell",name:"Nimbus Bell",icon:"🔔",rarity:"Uncommon",weight:10,desc:"A newly discovered uncommon aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-ocean-glass",name:"Ocean Glass",icon:"🩵",rarity:"Uncommon",weight:10,desc:"A newly discovered uncommon aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-petal-whirl",name:"Petal Whirl",icon:"🌷",rarity:"Uncommon",weight:10,desc:"A newly discovered uncommon aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-quicksilver-finch",name:"Quicksilver Finch",icon:"🐦",rarity:"Uncommon",weight:10,desc:"A newly discovered uncommon aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-riverstone",name:"Riverstone",icon:"🪨",rarity:"Uncommon",weight:10,desc:"A newly discovered uncommon aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-saffron-skies",name:"Saffron Skies",icon:"🌇",rarity:"Uncommon",weight:10,desc:"A newly discovered uncommon aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-thistle-flare",name:"Thistle Flare",icon:"🌾",rarity:"Uncommon",weight:10,desc:"A newly discovered uncommon aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-umber-cloud",name:"Umber Cloud",icon:"☁️",rarity:"Uncommon",weight:10,desc:"A newly discovered uncommon aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-velvet-orbit",name:"Velvet Orbit",icon:"🪐",rarity:"Rare",weight:5,desc:"A newly discovered rare aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-winterglass",name:"Winterglass",icon:"🧊",rarity:"Rare",weight:5,desc:"A newly discovered rare aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-xylophone-star",name:"Xylophone Star",icon:"🎼",rarity:"Rare",weight:5,desc:"A newly discovered rare aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-yuzu-lightning",name:"Yuzu Lightning",icon:"🍋",rarity:"Rare",weight:5,desc:"A newly discovered rare aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-zircon-wing",name:"Zircon Wing",icon:"💠",rarity:"Rare",weight:5,desc:"A newly discovered rare aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-amethyst-engine",name:"Amethyst Engine",icon:"🔮",rarity:"Rare",weight:5,desc:"A newly discovered rare aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-borealis-dancer",name:"Borealis Dancer",icon:"🌌",rarity:"Rare",weight:5,desc:"A newly discovered rare aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-cinder-serpent",name:"Cinder Serpent",icon:"🐍",rarity:"Rare",weight:5,desc:"A newly discovered rare aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-dusk-ranger",name:"Dusk Ranger",icon:"🏹",rarity:"Rare",weight:5,desc:"A newly discovered rare aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-echo-lantern",name:"Echo Lantern",icon:"🏮",rarity:"Rare",weight:5,desc:"A newly discovered rare aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-flux-warden",name:"Flux Warden",icon:"🛡️",rarity:"Epic",weight:2,desc:"A newly discovered epic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-gravity-bloom",name:"Gravity Bloom",icon:"🌺",rarity:"Epic",weight:2,desc:"A newly discovered epic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-hyperglass",name:"Hyperglass",icon:"💎",rarity:"Epic",weight:2,desc:"A newly discovered epic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-ion-orchid",name:"Ion Orchid",icon:"⚡",rarity:"Epic",weight:2,desc:"A newly discovered epic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-jade-comet",name:"Jade Comet",icon:"☄️",rarity:"Epic",weight:2,desc:"A newly discovered epic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-kingfisher-nebula",name:"Kingfisher Nebula",icon:"🐦‍🔥",rarity:"Epic",weight:2,desc:"A newly discovered epic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-lucid-tornado",name:"Lucid Tornado",icon:"🌪️",rarity:"Epic",weight:2,desc:"A newly discovered epic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-mirror-phoenix",name:"Mirror Phoenix",icon:"🪞",rarity:"Epic",weight:2,desc:"A newly discovered epic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-nightcode",name:"Nightcode",icon:"💻",rarity:"Epic",weight:2,desc:"A newly discovered epic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-orbit-breaker",name:"Orbit Breaker",icon:"🪐",rarity:"Epic",weight:2,desc:"A newly discovered epic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-polaris-knight",name:"Polaris Knight",icon:"⚔️",rarity:"Legendary",weight:0.8,desc:"A newly discovered legendary aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-quasar-behemoth",name:"Quasar Behemoth",icon:"🌠",rarity:"Legendary",weight:0.8,desc:"A newly discovered legendary aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-rift-empress",name:"Rift Empress",icon:"👑",rarity:"Legendary",weight:0.8,desc:"A newly discovered legendary aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-storm-forger",name:"Storm Forger",icon:"🔨",rarity:"Legendary",weight:0.8,desc:"A newly discovered legendary aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-titan-of-tides",name:"Titan of Tides",icon:"🌊",rarity:"Legendary",weight:0.8,desc:"A newly discovered legendary aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-umbra-colossus",name:"Umbra Colossus",icon:"🗿",rarity:"Mythic",weight:0.25,desc:"A newly discovered mythic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-vortex-archangel",name:"Vortex Archangel",icon:"🪽",rarity:"Mythic",weight:0.25,desc:"A newly discovered mythic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-wyrm-of-eons",name:"Wyrm of Eons",icon:"🐉",rarity:"Mythic",weight:0.25,desc:"A newly discovered mythic aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-xenith-specter",name:"Xenith Specter",icon:"👁️",rarity:"Divine",weight:0.08,desc:"A newly discovered divine aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-yggdrasil-core",name:"Yggdrasil Core",icon:"🌲",rarity:"Secret",weight:0.025,desc:"A newly discovered secret aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-zenith-beyond-zero",name:"ZENITH BEYOND ZERO",icon:"♾️🌌",rarity:"TRANSCENDENT",weight:0.008,desc:"A newly discovered transcendent aura. Its power exists beyond the known limits of the collection."},
+      {id:"new-absolute-above-milo",name:"ABSOLUTE: NO ONE ABOVE",icon:"🜲",rarity:"ABSOLUTE",weight:0.0005,desc:"A newly discovered absolute aura. Its power exists beyond the known limits of the collection."}
+    ];
+    let gacha;
+    try { gacha = JSON.parse(localStorage.getItem(GACHA_KEY)) || {}; } catch { gacha = {}; }
+    if (!Number.isFinite(gacha.spins)) gacha.spins = Number.isFinite(data.gachaSpins) ? data.gachaSpins : 0;
+    if (typeof gacha.autoSpinUnlocked !== "boolean") gacha.autoSpinUnlocked = gacha.spins >= 100;
+    if (gacha.spins >= 100) gacha.autoSpinUnlocked = true;
+    if (!Number.isFinite(gacha.spinDust)) gacha.spinDust = 0;
+    if (!Number.isFinite(gacha.ultimateProgress)) gacha.ultimateProgress = 0;
+    if (!Number.isFinite(gacha.ultimateSpins)) gacha.ultimateSpins = 0;
+    if (!Number.isFinite(gacha.nextRollLuckMultiplier)) gacha.nextRollLuckMultiplier = 1;
+    gacha.ultimateProgress = Math.max(0, Math.min(999, gacha.ultimateProgress));
+    if (!gacha.collection || typeof gacha.collection !== "object") gacha.collection = {};
+    if (!Number.isFinite(gacha.rolls)) gacha.rolls = 0;
+    if (!gacha.items || typeof gacha.items !== "object") gacha.items = {};
+    if (!Array.isArray(gacha.craftedGear)) gacha.craftedGear = [];
+    if (!gacha.potions || typeof gacha.potions !== "object") gacha.potions = {};
+    if (!gacha.activePotion || typeof gacha.activePotion !== "object") gacha.activePotion = null;
+    function updateAutoSpinUnlock() {
+      if (gacha.spins >= 100) gacha.autoSpinUnlocked = true;
+      const autoButton = document.getElementById("autoSpinButton");
+      if (!autoButton) return;
+      const unlocked = Boolean(gacha.autoSpinUnlocked);
+      autoButton.disabled = !unlocked;
+      autoButton.title = unlocked ? "Auto Spin unlocked" : `Unlock Auto Spin at 100 spins (${Math.floor(gacha.spins)}/100)`;
+      if (!unlocked) {
+        autoButton.textContent = `AUTO SPIN: LOCKED (${Math.floor(gacha.spins)}/100)`;
+        autoButton.setAttribute("aria-pressed", "false");
+      } else {
+        autoButton.textContent = autoSpinEnabled ? "AUTO SPIN: ON · STOP" : "AUTO SPIN: OFF";
+        autoButton.setAttribute("aria-pressed", String(autoSpinEnabled));
+      }
+    }
+    function saveGacha() {
+      updateAutoSpinUnlock();
+      data.gachaSpins = gacha.spins;
+      data.gachaRolls = gacha.rolls;
+      try { localStorage.setItem(GACHA_KEY, JSON.stringify(gacha)); } catch {}
+      save();
+    }
+    let rolling = false;
+    let autoSpinEnabled = false;
+    let autoSpinTimer = null;
+    function setAutoSpin(enabled) {
+      autoSpinEnabled = Boolean(enabled);
+      const autoButton = document.getElementById("autoSpinButton");
+      if (autoButton && gacha.autoSpinUnlocked) {
+        autoButton.textContent = autoSpinEnabled ? "AUTO SPIN: ON · STOP" : "AUTO SPIN: OFF";
+        autoButton.setAttribute("aria-pressed", String(autoSpinEnabled));
+      }
+      if (!autoSpinEnabled && autoSpinTimer) { clearTimeout(autoSpinTimer); autoSpinTimer = null; }
+    }
+    // Synthesized case-roll audio: short ticking tones that slow down with the reel.
+    let spinAudioContext = null;
+    let spinSoundTimer = null;
+    let spinSoundStartedAt = 0;
+    let spinSoundVolume = 1;
+    let cutsceneSoundVolume = 1;
+    function playSpinTone(frequency = 620, duration = 0.045, volume = 0.035, type = "square", channel = "effects") {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        if (!spinAudioContext) spinAudioContext = new AudioCtx();
+        if (spinAudioContext.state === "suspended") spinAudioContext.resume();
+        const now = spinAudioContext.currentTime;
+        const oscillator = spinAudioContext.createOscillator();
+        const gain = spinAudioContext.createGain();
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, now);
+        gain.gain.setValueAtTime(volume * (channel === "cutscene" ? cutsceneSoundVolume : spinSoundVolume), now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        oscillator.connect(gain);
+        gain.connect(spinAudioContext.destination);
+        oscillator.start(now);
+        oscillator.stop(now + duration);
+      } catch (_) { /* Audio is optional; rolling must still work if sound is blocked. */ }
+    }
+    function stopSpinSound() {
+      if (spinSoundTimer) clearTimeout(spinSoundTimer);
+      spinSoundTimer = null;
+    }
+    function startSpinSound() {
+      stopSpinSound();
+      spinSoundStartedAt = Date.now();
+      const tick = () => {
+        const elapsed = Date.now() - spinSoundStartedAt;
+        if (elapsed >= 6250) return;
+        playSpinTone(460 + Math.random() * 260, 0.035, 0.025, "square");
+        const progress = Math.min(1, elapsed / 6200);
+        const nextDelay = 65 + Math.pow(progress, 2.4) * 340;
+        spinSoundTimer = setTimeout(tick, nextDelay);
+      };
+      tick();
+    }
+    function playRevealSound(rarity) {
+      stopSpinSound();
+      const rare = ["Legendary", "Mythic", "Divine", "Secret", "??? SECRET ???"].includes(rarity);
+      playSpinTone(rare ? 660 : 520, 0.16, 0.055, "sine", "cutscene");
+      setTimeout(() => playSpinTone(rare ? 990 : 780, 0.24, 0.045, "sine", "cutscene"), 100);
+      if (["Divine", "Secret", "??? SECRET ???"].includes(rarity)) {
+        setTimeout(() => playSpinTone(1320, 0.38, 0.04, "sine", "cutscene"), 210);
+      }
+    }
+    function playDogBarkSound() {
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        const ctx = new Ctx();
+        [0, 260, 620, 900].forEach((delay, i) => {
+          const osc = ctx.createOscillator(); const gain = ctx.createGain();
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(170 + (i % 2) * 55, ctx.currentTime + delay / 1000);
+          osc.frequency.exponentialRampToValueAtTime(75, ctx.currentTime + delay / 1000 + 0.12);
+          gain.gain.setValueAtTime(0.0001, ctx.currentTime + delay / 1000);
+          gain.gain.exponentialRampToValueAtTime(0.09 * cutsceneSoundVolume, ctx.currentTime + delay / 1000 + 0.025);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay / 1000 + 0.16);
+          osc.connect(gain); gain.connect(ctx.destination); osc.start(ctx.currentTime + delay / 1000); osc.stop(ctx.currentTime + delay / 1000 + 0.17);
+        });
+        setTimeout(() => ctx.close().catch(()=>{}), 1500);
+      } catch {}
+    }
+    function playShhSound() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const length = Math.floor(ctx.sampleRate * 0.75);
+        const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+        const channel = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) channel[i] = (Math.random() * 2 - 1) * (1 - i / length) * 0.7;
+        const source = ctx.createBufferSource(); source.buffer = buffer;
+        const filter = ctx.createBiquadFilter(); filter.type = "bandpass"; filter.frequency.value = 2600; filter.Q.value = 0.55;
+        const gain = ctx.createGain(); gain.gain.setValueAtTime(0.0001, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.16 * cutsceneSoundVolume, ctx.currentTime + 0.08); gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.72);
+        source.connect(filter); filter.connect(gain); gain.connect(ctx.destination); source.start(); source.stop(ctx.currentTime + 0.76);
+        setTimeout(() => ctx.close().catch(()=>{}), 1000);
+      } catch {}
+    }
+    function playRarityCinematic(aura, forceView = false) {
+      const rarity = aura.rarity;
+      const color = ({Common:"#a7b0c0",Uncommon:"#65d69a",Rare:"#64a7ff",Epic:"#c18aff",Legendary:"#ffbf57",Mythic:"#ff6cbd",Divine:"#fff08a",Secret:"#ff5fe2","??? SECRET ???":"#ff2fd2",TRANSCENDENT:"#ffffff",ABSOLUTE:"#ffffff"})[rarity] || "#a98bff";
+      // Common has no roll cinematic, but its collection entry can still be opened on demand.
+      if (rarity === "Common" && !forceView) return Promise.resolve();
+      const overlay = document.createElement("div");
+      overlay.className = "reveal-cinema";
+      overlay.style.setProperty("--reveal-color", color);
+      let duration = 1300;
+      if (rarity === "Common" && forceView) {
+        duration = 1500;
+        overlay.innerHTML = `<div class="cinema-inner"><div class="cinema-sub">AURA CUTSCENE</div><div class="cinema-icon">${aura.icon}</div><div class="cinema-title" style="color:${color}">${aura.name}</div><div class="cinema-quote">“${aura.desc}”</div><div class="cinema-sub">COMMON AURA</div></div>`;
+        document.body.appendChild(overlay);
+      } else if (["Secret","??? SECRET ???","TRANSCENDENT","ABSOLUTE"].includes(rarity)) {
+        // Every top-tier aura gets a personalized reveal: hush, three flickers, then its own icon/name/color.
+        const isYggdrasil = /yggdrasil/i.test(aura.name + " " + aura.id);
+        const isMilo = aura.id === "milo-ban";
+        const isJulian = aura.id === "julian-thomson";
+        const isTranscendent = ["TRANSCENDENT","ABSOLUTE"].includes(rarity);
+        duration = isTranscendent ? 6500 : rarity === "??? SECRET ???" ? 5200 : 4200;
+        overlay.classList.add("blackout");
+        overlay.style.background = isYggdrasil ? "radial-gradient(circle,#063c24,#000 72%)" : isMilo ? "radial-gradient(circle,#4a3218,#050505 72%)" : isJulian ? "radial-gradient(circle,#29205f,#000 72%)" : `radial-gradient(circle,${color}22,#000 72%)`;
+        const motif = isYggdrasil ? `<div class="cinema-icon" style="color:#65ff9a;filter:drop-shadow(0 0 22px #38ff86)">🌱</div><div class="cinema-sub">A GREEN STEM EMERGES</div>` : isMilo ? `<div class="dog-stage">🐕</div><div class="cinema-sub">A PAWPRINT CROSSES THE VOID</div>` : isJulian ? `<div class="space-scene"><div class="space-planet"></div></div><div class="cinema-icon">🌌</div>` : `<div class="cinema-icon" style="filter:drop-shadow(0 0 24px ${color})">${aura.icon}</div><div class="cinema-sub">AN ANOMALY SHAPED LIKE ${aura.name.toUpperCase()}</div>`;
+        overlay.innerHTML = `<div class="cinema-inner"><div class="cinema-sub">${isTranscendent ? "REALITY IS BREAKING" : "HIDDEN RARITY DETECTED"}</div><div class="shush-face">🤫</div><div class="cinema-title">SHHHH...</div><div class="cinema-sub">DO NOT LOOK AWAY</div></div>`;
+        document.body.appendChild(overlay); playShhSound();
+        setTimeout(() => {
+          if (!overlay.isConnected) return;
+          overlay.innerHTML = `<div class="cinema-inner"><div class="cinema-sub">${isTranscendent ? "TRANSCENDENT EVENT" : "SECRET SIGNAL"}</div>${motif}<div class="cinema-title" style="color:${color}">${aura.name.toUpperCase()}</div><div class="cinema-sub">FLICKER 1 / 3</div></div>`;
+          overlay.classList.remove("blackout");
+          let flick = 0;
+          const flicker = () => {
+            if (!overlay.isConnected || flick >= 3) return;
+            flick++;
+            overlay.style.opacity = flick % 2 ? "0.12" : "1";
+            const sub = overlay.querySelector(".cinema-sub:last-child");
+            if (sub) sub.textContent = `REVEAL FLICKER ${flick} / 3`;
+            setTimeout(flicker, isTranscendent ? 360 : 240);
+          };
+          setTimeout(() => { overlay.style.opacity = "1"; flicker(); }, 500);
+          setTimeout(() => {
+            if (!overlay.isConnected) return;
+            overlay.style.opacity = "1";
+            overlay.style.background = isYggdrasil ? "radial-gradient(circle,#147a43,#000 70%)" : `radial-gradient(circle,${color}55,#000 70%)`;
+            overlay.innerHTML = `<div class="cinema-inner"><div class="cinema-sub">${rarity.toUpperCase()} AURA UNSEALED</div><div class="cinema-icon" style="filter:drop-shadow(0 0 30px ${color})">${aura.icon}</div><div class="cinema-title" style="color:${color}">${aura.name}</div><div class="cinema-quote">“${aura.desc}”</div><div class="cinema-sub">RECORDED IN THE LOGBOOK</div></div>`;
+          }, isTranscendent ? 3000 : 2200);
+        }, 1150);
+      } else if (rarity === "Uncommon" || rarity === "Rare") {
+        overlay.classList.add("blackout"); duration = 1050;
+        overlay.innerHTML = `<div class="cinema-inner"><div class="cinema-sub">CASE BLACKOUT</div><div class="cinema-title">...</div></div>`;
+        document.body.appendChild(overlay);
+        setTimeout(() => { if (!overlay.isConnected) return; overlay.innerHTML = `<div class="cinema-inner"><div class="cinema-icon">${aura.icon}</div><div class="cinema-title" style="color:${color}">${aura.name}</div><div class="cinema-sub">${rarity.toUpperCase()} AURA</div></div>`; overlay.classList.remove("blackout"); overlay.style.background = `radial-gradient(circle,${color}44, #03040a 65%)`; }, 450);
+      } else if (rarity === "Epic" || rarity === "Legendary") {
+        overlay.classList.add("star-reveal"); duration = 1800;
+        overlay.innerHTML = `<div class="reveal-star"></div><div class="cinema-inner"><div class="cinema-sub">${rarity.toUpperCase()} DROP</div><div class="cinema-icon">${aura.icon}</div><div class="cinema-title" style="color:${color}">${aura.name}</div><div class="cinema-sub">A STAR OF YOUR AURA'S COLOUR</div></div>`;
+        document.body.appendChild(overlay);
+      } else if (rarity === "Mythic" || rarity === "Divine") {
+        duration = 2600;
+        overlay.classList.add("star-reveal");
+        overlay.innerHTML = `<div class="reveal-star"></div><div class="cinema-inner"><div class="cinema-sub">${rarity.toUpperCase()} AWAKENING</div><div class="cinema-icon">${aura.icon}</div><div class="cinema-title" style="color:${color}">${aura.name}</div><div class="cinema-quote">“${aura.desc}”</div><div class="cinema-sub">AURA QUOTE REVEALED</div></div>`;
+        document.body.appendChild(overlay);
+      } else if (aura.id === "milo-ban") {
+        duration = 2600;
+        overlay.style.background = "radial-gradient(circle,#4a3218,#090707 70%)";
+        overlay.innerHTML = `<div class="cinema-inner"><div class="cinema-sub">IMPOSSIBLE SECRET FOUND</div><div class="dog-stage">🐕</div><div class="cinema-title" style="color:#ffd27a">MILO BAN!</div><div class="dog-caption">WOOF! WOOF! WOOF!</div><div class="cinema-quote">${aura.desc}</div></div>`;
+        document.body.appendChild(overlay); playDogBarkSound();
+      } else if (aura.id === "julian-thomson") {
+        duration = 5000;
+        overlay.innerHTML = `<div class="space-scene"><div class="space-planet"></div></div><div class="cinema-inner"><div class="cinema-sub">5-SECOND COSMIC TRANSMISSION</div><div class="cinema-icon">🌌</div><div class="cinema-title" style="color:#d9c7ff">JULIAN THOMSON</div><div class="cinema-quote">${aura.desc}</div><div class="cinema-sub">SIGNAL FROM THE DEEP SPACE</div></div>`;
+        document.body.appendChild(overlay);
+      } else {
+        duration = 3000;
+        overlay.classList.add("blackout");
+        overlay.style.background = "#000";
+        overlay.innerHTML = `<div class="cinema-inner"><div class="cinema-sub">${forceView ? "SECRET AURA CUTSCENE" : "IMPOSSIBLE RARITY DETECTED"}</div><div class="shush-face">🤫</div><div class="cinema-title">SHHHH...</div><div class="cinema-sub">SOMETHING IMPOSSIBLE IS HERE</div></div>`;
+        document.body.appendChild(overlay);
+        playShhSound();
+        setTimeout(() => {
+          if (!overlay.isConnected) return;
+          overlay.innerHTML = `<div class="cinema-inner"><div class="cinema-sub">SECRET REVEALED</div><div class="cinema-icon">${aura.icon}</div><div class="cinema-title" style="color:${color}">${aura.name}</div><div class="cinema-quote">“${aura.desc}”</div><div class="cinema-sub">KEEP IT QUIET.</div></div>`;
+          overlay.style.background = "radial-gradient(circle at center,#23152b,#000 68%)";
+        }, 1050);
+      }
+      return new Promise(resolve => setTimeout(() => { overlay.remove(); resolve(); }, duration));
+    }
+
+    function rollAura(useUltimate = false) {
+      if (rolling || (useUltimate ? gacha.ultimateSpins < 1 : gacha.spins < 1)) return;
+      rolling = true;
+      const hiddenLuckMultiplier = gacha.nextRollLuckMultiplier >= 10 ? 10 : 1;
+      // Ultimate Spins guarantee Legendary or better; they do not multiply top-tier weights.
+      const luckMultiplier = hiddenLuckMultiplier;
+      if (useUltimate) gacha.ultimateSpins -= 1;
+      else gacha.spins -= 1;
+      gacha.nextRollLuckMultiplier = 1;
+      startSpinSound();
+      const button = document.getElementById("spinButton");
+      const resultBox = document.getElementById("auraResult");
+      const reelBox = document.getElementById("caseReel");
+      const track = document.getElementById("caseTrack");
+      const status = document.getElementById("caseStatus");
+      const iconNode = document.getElementById("auraResultIcon");
+      const rarityNode = document.getElementById("auraResultRarity");
+      const nameNode = document.getElementById("auraResultName");
+      const descNode = document.getElementById("auraResultDesc");
+      gacha.rolls += 1;
+      const gearLuckBoost = getTotalLuckBoost();
+      const potionLuckBoost = gacha.activePotion && gacha.activePotion.remaining > 0 ? gacha.activePotion.luckBonus : 0;
+      const totalLuckBoost = gearLuckBoost + potionLuckBoost;
+      const rarityTier = {"Common":0,"Uncommon":0,"Rare":1,"Epic":2,"Legendary":3,"Mythic":4,"Divine":5,"Secret":6,"??? SECRET ???":7,"TRANSCENDENT":8,"ABSOLUTE":9};
+      // Keep luck meaningful but bounded: no exponential tier stacking that destroys normal-spin odds.
+      const effectiveLuck = Math.min(2000, Math.max(0, totalLuckBoost));
+      const luckFactor = effectiveLuck / 100;
+      const rarityDampening = {"Legendary":0.20,"Mythic":0.055,"Divine":0.008,"Secret":0.00055,"??? SECRET ???":0.00008,"TRANSCENDENT":0.000012,"ABSOLUTE":0.000002};
+      const boostedAuras = AURAS.map(aura => {
+        const tier = rarityTier[aura.rarity] || 0;
+        // Luck is intentionally soft-capped for rare tiers: it helps without erasing rarity.
+        const tierDamp = rarityDampening[aura.rarity] || 1;
+        const rarityLuck = tier > 0 ? 1 + Math.min(250, effectiveLuck) / 100 * Math.min(tier, 4) * 0.025 : 1;
+        const ultimateFactor = tier >= 3 ? luckMultiplier : 1;
+        return { ...aura, rollWeight: aura.weight * tierDamp * rarityLuck * ultimateFactor };
+      });
+      if (gacha.activePotion && gacha.activePotion.remaining > 0) {
+        gacha.activePotion.remaining -= 1;
+        if (gacha.activePotion.remaining <= 0) gacha.activePotion = null;
+      }
+      // Ultimate Spin pool excludes every rarity below Legendary, while preserving base rarity weights.
+      const eligibleAuras = useUltimate ? boostedAuras.filter(aura => (rarityTier[aura.rarity] || 0) >= 3) : boostedAuras;
+      const totalWeight = eligibleAuras.reduce((sum, aura) => sum + aura.rollWeight, 0);
+      let roll = Math.random() * totalWeight;
+      let won = eligibleAuras[eligibleAuras.length - 1];
+      for (const aura of eligibleAuras) { roll -= aura.rollWeight; if (roll < 0) { won = aura; break; } }
+
+      button.disabled = true;
+      button.textContent = useUltimate ? "✦ ULTIMATE CASE OPENING..." : "✦ CASE OPENING...";
+      resultBox.classList.add("show", "rolling-result");
+      resultBox.classList.remove("jackpot-hit");
+      resultBox.setAttribute("aria-label", "Aura roll in progress");
+      iconNode.textContent = "🎁";
+      rarityNode.textContent = "CASE OPENING";
+      rarityNode.className = "aura-rarity";
+      nameNode.textContent = "What will you get?";
+      descNode.textContent = "Watch the reel stop on your aura...";
+      reelBox.classList.add("active");
+      reelBox.classList.remove("landed");
+      status.textContent = "OPENING CASE...";
+      track.style.transition = "none";
+      track.style.transform = "translateX(0)";
+      track.innerHTML = "";
+
+      // Build a long horizontal case-opening strip, with the selected prize at the stopping marker.
+      const strip = [];
+      for (let i = 0; i < 42; i++) {
+        strip.push(AURAS[Math.floor(Math.random() * AURAS.length)]);
+      }
+      const winIndex = 36;
+      strip[winIndex] = won;
+      strip[winIndex - 1] = AURAS[Math.floor(Math.random() * AURAS.length)];
+      strip[winIndex + 1] = AURAS[Math.floor(Math.random() * AURAS.length)];
+      const colorFor = rarity => ({
+        "Common":"#a7b0c0","Uncommon":"#65d69a","Rare":"#64a7ff","Epic":"#c18aff",
+        "Legendary":"#ffbf57","Mythic":"#ff6cbd","Divine":"#fff08a","Secret":"#ff5fe2","??? SECRET ???":"#ff2fd2",TRANSCENDENT:"#ffffff"
+      }[rarity] || "#a98bff");
+      strip.forEach(aura => {
+        const tile = document.createElement("div");
+        tile.className = "case-tile";
+        tile.style.setProperty("--tile-color", colorFor(aura.rarity));
+        const emoji = document.createElement("div"); emoji.className = "case-icon"; emoji.textContent = aura.icon;
+        const label = document.createElement("div"); label.className = "case-name"; label.textContent = aura.name;
+        tile.append(emoji, label); track.appendChild(tile);
+      });
+      saveGacha();
+      renderRewards();
+      button.disabled = true;
+      button.textContent = "✦ CASE OPENING...";
+      // Align the center of the winning tile with the gold marker.
+      const tile = track.children[winIndex];
+      const tileCenter = tile.offsetLeft + tile.offsetWidth / 2;
+      const reelCenter = reelBox.querySelector(".case-window").clientWidth / 2;
+      const destination = Math.max(0, tileCenter - reelCenter);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          track.style.transition = "transform 6.2s cubic-bezier(.08,.72,.12,1)";
+          track.style.transform = `translateX(-${destination}px)`;
+        });
+      });
+      status.textContent = "ROLLING • ROLLING • ROLLING";
+      let suspense = setTimeout(() => { status.textContent = "SLOWING DOWN..."; }, 3900);
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(suspense);
+        playRevealSound(won.rarity);
+        gacha.collection[won.id] = (gacha.collection[won.id] || 0) + 1;
+        // Each roll also awards one crafting material; rarer rolls can award extra.
+        const material = won.rarity === "??? SECRET ???" ? "miloCore" : ({Secret:"starMetal",Divine:"aetherShard",Mythic:"moonCrystal",Legendary:"emberStone"}[won.rarity] || "gearScrap");
+        gacha.items[material] = (gacha.items[material] || 0) + 1;
+        if (["Divine","Secret","??? SECRET ???"].includes(won.rarity)) gacha.items.gearScrap = (gacha.items.gearScrap || 0) + 1;
+        const abilityMessages = activateGearAbilities();
+        gacha.lastAura = won.id;
+        saveGacha();
+        reelBox.classList.add("landed");
+        status.textContent = "CASE OPENED!";
+        resultBox.classList.remove("rolling-result");
+        resultBox.classList.add("jackpot-hit");
+        resultBox.setAttribute("aria-label", "Aura obtained: " + won.name);
+        renderRewards(won.id);
+        if (abilityMessages.length) {
+          const abilityNote = document.getElementById("gearNotice");
+          if (abilityNote) abilityNote.textContent = "GEAR ABILITY ACTIVATED: " + abilityMessages.join(" · ");
+        }
+        resultBox.classList.add("jackpot-hit");
+        if (["Legendary", "Mythic", "Divine", "Secret", "??? SECRET ???"].includes(won.rarity)) {
+          document.body.classList.add("rare-drop-flash");
+          setTimeout(() => document.body.classList.remove("rare-drop-flash"), 900);
+        }
+        button.textContent = "✦ REVEALED!";
+        playRarityCinematic(won).finally(() => {
+          rolling = false;
+          renderRewards(won.id);
+          reelBox.classList.remove("active");
+          if (autoSpinEnabled && gacha.spins > 0) {
+            autoSpinTimer = setTimeout(() => {
+              autoSpinTimer = null;
+              if (autoSpinEnabled && !rolling && gacha.spins > 0) rollAura(false);
+            }, 450);
+          } else if (autoSpinEnabled && gacha.spins < 1) {
+            setAutoSpin(false);
+          }
+        });
+      };
+      track.addEventListener("transitionend", function onEnd(e) {
+        if (e.propertyName !== "transform") return;
+        track.removeEventListener("transitionend", onEnd);
+        finish();
+      });
+      // Safety fallback in case a browser doesn't emit transitionend.
+      setTimeout(() => { if (rolling) finish(); }, 6800);
+    }
+    updateAutoSpinUnlock();
+    document.getElementById("spinButton").addEventListener("click", () => rollAura(false));
+    document.getElementById("autoSpinButton").addEventListener("click", () => {
+      if (!gacha.autoSpinUnlocked) {
+        const status = document.getElementById("caseStatus");
+        if (status) status.textContent = `AUTO SPIN UNLOCKS AT 100 SPINS (${Math.floor(gacha.spins)}/100)`;
+        return;
+      }
+      if (autoSpinEnabled) { setAutoSpin(false); return; }
+      if (gacha.spins < 1) {
+        const status = document.getElementById("caseStatus");
+        if (status) status.textContent = "EARN SPINS BEFORE USING AUTO SPIN";
+        return;
+      }
+      setAutoSpin(true);
+      if (!rolling) rollAura(false);
+    });
+    document.getElementById("ultimateSpinButton").addEventListener("click", () => rollAura(true));
+    const SELL_VALUES = {Common:1,Uncommon:2,Rare:4,Epic:8,Legendary:20,Mythic:50,Divine:125,Secret:250,"??? SECRET ???":400};
+    function awardAuraSaleCharge(totalValue) {
+      gacha.ultimateProgress = (gacha.ultimateProgress || 0) + totalValue;
+      let earnedUltimateSpins = 0;
+      while (gacha.ultimateProgress >= 1000) {
+        gacha.ultimateProgress -= 1000;
+        gacha.ultimateSpins = (gacha.ultimateSpins || 0) + 1;
+        earnedUltimateSpins += 1;
+      }
+      return earnedUltimateSpins;
+    }
+    function sellAuraGroup(potionIngredientsOnly) {
+      if (rolling) return;
+      const potionIngredientIds = new Set(POTION_RECIPES.flatMap(recipe => recipe.ingredients.map(ingredient => ingredient.aura)));
+      let soldCopies = 0;
+      let totalValue = 0;
+      AURAS.forEach(aura => {
+        if (potionIngredientIds.has(aura.id) !== potionIngredientsOnly) return;
+        const count = gacha.collection[aura.id] || 0;
+        const copies = Math.max(0, count - 1);
+        if (!copies) return;
+        gacha.collection[aura.id] = 1;
+        soldCopies += copies;
+        totalValue += copies * (SELL_VALUES[aura.rarity] ?? 1);
+      });
+      const note = document.getElementById("sellNotice");
+      if (!soldCopies) {
+        if (note) note.textContent = potionIngredientsOnly ? "No duplicate potion-crafting auras to sell. Your last copy of each aura is protected." : "No duplicate other auras to sell. Your last copy of each aura is protected.";
+        return;
+      }
+      const earned = awardAuraSaleCharge(totalValue);
+      saveGacha(); renderRewards();
+      if (note) note.textContent = `Sold ${soldCopies} duplicate ${potionIngredientsOnly ? "potion-crafting" : "other"} aura copies for +${totalValue} charge${earned ? ` and earned ${earned} Ultimate Spin${earned === 1 ? "" : "s"}` : ""}. Kept one copy of every aura.`;
+    }
+    document.getElementById("sellPotionAuraDuplicates").addEventListener("click", () => sellAuraGroup(true));
+    document.getElementById("sellAllOtherAuras").addEventListener("click", () => sellAuraGroup(false));
+    function sellAura(auraId) {
+      if (rolling) return;
+      const aura = AURAS.find(item => item.id === auraId);
+      const count = gacha.collection[auraId] || 0;
+      if (!aura || count < 1) return;
+      // Keep at least one copy of every discovered aura; only duplicates can be sold.
+      if (count <= 1) {
+        const note = document.getElementById("sellNotice");
+        if (note) note.textContent = "Keep your last copy! You can sell duplicates only.";
+        return;
+      }
+      gacha.collection[auraId] = count - 1;
+      const value = SELL_VALUES[aura.rarity] ?? 1;
+      const earnedUltimateSpins = awardAuraSaleCharge(value);
+      // Hidden bonus: a very rare sell-triggered surprise gives the next roll 10× rarity luck.
+      const secretLuckTriggered = Math.random() < 1 / 10000;
+      if (secretLuckTriggered) gacha.nextRollLuckMultiplier = 10;
+      saveGacha();
+      renderRewards();
+      const note = document.getElementById("sellNotice");
+      if (note) {
+        if (secretLuckTriggered) note.textContent = `Sold 1 ${aura.name}. COSMIC LUCK SURGE! Your next roll has a 10× luck boost.`;
+        else if (earnedUltimateSpins > 0) note.textContent = `Sold 1 ${aura.name} (+${value} charge). You earned ${earnedUltimateSpins} Ultimate Spin${earnedUltimateSpins === 1 ? "" : "s"}!`;
+        else note.textContent = `Sold 1 ${aura.name} for +${value} Ultimate Luck Charge.`;
+      }
+    }
+
+    function activateGearAbilities() {
+      const equipped = new Set(gacha.equippedGear || []);
+      const messages = [];
+      const chance = (probability) => Math.random() < probability;
+      const extraMaterial = (gearId, probability, material, label) => {
+        if (equipped.has(gearId) && chance(probability)) {
+          gacha.items[material] = (gacha.items[material] || 0) + 1;
+          messages.push(`${label} +1 ${MATERIAL_NAMES_LOCAL[material]}`);
+        }
+      };
+      // Material passives and spin refunds only activate while the gear is equipped.
+      extraMaterial("twigblade", 0.05, "gearScrap", "First Cut");
+      extraMaterial("leafguard", 0.08, "gearScrap", "Verdant Guard");
+      extraMaterial("frostfang", 0.10, "emberStone", "Frostbite Edge");
+      extraMaterial("crystalstaff", 0.10, "moonCrystal", "Crystal Resonance");
+      extraMaterial("dragonhelm", 0.08, "emberStone", "Dragon Ward");
+      extraMaterial("auroracape", 0.08, "aetherShard", "Prismatic Trail");
+      extraMaterial("zenith-trident", 0.12, "starMetal", "Starfall");
+      extraMaterial("cosmicarmor", 0.10, "aetherShard", "Cosmic Shield");
+      extraMaterial("milo-gauntlet", 0.10, "miloCore", "Milo’s Lucky Paw");
+      extraMaterial("solar-cuirass", 0.08, "emberStone", "Solar Flare");
+      extraMaterial("glacier-greaves", 0.08, "moonCrystal", "Absolute Zero");
+      extraMaterial("dragon-scepter", 0.10, "emberStone", "Sovereign Flame");
+      extraMaterial("lunar-crown", 0.08, "moonCrystal", "Moonlit Fortune");
+      extraMaterial("prism-orb", 0.10, "aetherShard", "Spectrum Surge");
+      extraMaterial("celestial-bow", 0.10, "starMetal", "Constellation Shot");
+      extraMaterial("eternal-sunblade", 0.10, "emberStone", "Endless Dawn");
+      extraMaterial("abyss-drake-armor", 0.10, "miloCore", "Abyssal Hoard");
+      extraMaterial("astral-paladin-aegis", 0.12, "starMetal", "Astral Bastion");
+      extraMaterial("frost-monarch-crown", 0.12, "moonCrystal", "Frozen Fortune");
+      extraMaterial("astral-kitsune-mask", 0.13, "aetherShard", "Foxfire Cache");
+      extraMaterial("aether-crown-regalia", 0.14, "starMetal", "Creation Spark");
+      extraMaterial("origin-flame-edge", 0.14, "emberStone", "Origin Furnace");
+      extraMaterial("vanta-seraph-wings", 0.15, "miloCore", "Vanta Harvest");
+      extraMaterial("genesis-overlord-armor", 0.18, "starMetal", "Genesis Dividend");
+      if (equipped.has("thunderboots") && chance(0.05)) { gacha.spins += 1; messages.push("Lightning Dash refunded 1 spin"); }
+      if (equipped.has("infinityblade") && chance(0.05)) { gacha.spins += 1; messages.push("Infinite Echo refunded 1 spin"); }
+      if (equipped.has("void-cloak") && chance(0.07)) { gacha.spins += 1; messages.push("Void Slip refunded 1 spin"); }
+      if (equipped.has("julian-thomson-relic") && chance(0.15)) { gacha.spins += 1; messages.push("Thomson’s Singularity refunded 1 spin"); }
+      if (equipped.has("absolute-paradox-relic") && chance(0.18)) { gacha.spins += 1; messages.push("Paradox Echo refunded 1 spin"); }
+      return messages;
+    }
+    const MATERIAL_NAMES_LOCAL = {gearScrap:"Gear Scrap",emberStone:"Ember Stone",moonCrystal:"Moon Crystal",aetherShard:"Aether Shard",starMetal:"Star Metal",miloCore:"Milo Core"};
+
+    const GEAR_RECIPES = [
+      {id:"twigblade",name:"Twigblade",icon:"🗡️",desc:"A simple starter weapon.",ability:"First Cut — 5% chance to find an extra Gear Scrap on each roll.",luckBonus:25,aura:"starter",items:{gearScrap:25}},
+      {id:"leafguard",name:"Leafguard",icon:"🛡️",desc:"A shield grown from steady habits.",ability:"Verdant Guard — 8% chance to find an extra Gear Scrap on each roll.",luckBonus:50,aura:"leaf",items:{gearScrap:60}},
+      {id:"frostfang",name:"Frostfang",icon:"❄️⚔️",desc:"A chilled blade with a sharp edge.",ability:"Frostbite Edge — 10% chance to find an extra Ember Stone on each roll.",luckBonus:100,aura:"frost",items:{gearScrap:100,emberStone:15}},
+      {id:"thunderboots",name:"Thunderstep Boots",icon:"🥾⚡",desc:"Move with a burst of energy.",ability:"Lightning Dash — 5% chance to refund the spin you just used.",luckBonus:200,aura:"thunder",items:{gearScrap:175,emberStone:30}},
+      {id:"crystalstaff",name:"Crystal Staff",icon:"🔮",desc:"Focus shaped into a spell.",ability:"Crystal Resonance — 10% chance to find an extra Moon Crystal on each roll.",luckBonus:350,aura:"crystal",items:{gearScrap:250,moonCrystal:25}},
+      {id:"dragonhelm",name:"Dragonhelm",icon:"🐉🪖",desc:"A legendary guardian's helm.",ability:"Dragon Ward — 8% chance to find an extra Ember Stone on each roll.",luckBonus:500,aura:"dragon",items:{emberStone:100,moonCrystal:60}},
+      {id:"auroracape",name:"Aurora Cape",icon:"🌈🧥",desc:"A cloak woven from sky-light.",ability:"Prismatic Trail — 8% chance to find an extra Aether Shard on each roll.",luckBonus:750,aura:"aurora",items:{emberStone:175,aetherShard:50}},
+      {id:"infinityblade",name:"Infinity Blade",icon:"♾️🗡️",desc:"A blade forged from an endless loop.",ability:"Infinite Echo — 5% chance to refund the spin you just used.",luckBonus:1000,aura:"infinity",items:{moonCrystal:200,aetherShard:150}},
+      {id:"zenith-trident",name:"Zenith Trident",icon:"🔱✨",desc:"A celestial trident charged with the power of the highest star.",ability:"Starfall — 12% chance to find an extra Star Metal on each roll.",luckBonus:1250,aura:"infinity",items:{moonCrystal:250,aetherShard:200,starMetal:75}},
+      {id:"cosmicarmor",name:"Cosmic Armor",icon:"🌌🛡️",desc:"Armor tempered beyond the stars.",ability:"Cosmic Shield — 10% chance to find an extra Aether Shard on each roll.",luckBonus:1500,aura:"singularity",items:{aetherShard:300,starMetal:150}},
+      {id:"milo-gauntlet",name:"Milo Gauntlet",icon:"🐕",desc:"The ultimate dog-themed infinity gauntlet. A paw-shaped gold-and-violet glove, with six glowing gem pads and a bright infinity emblem.",ability:"Milo’s Lucky Paw — 10% chance to find an extra Milo Core on each roll.",luckBonus:2500,aura:"milo-ban",items:{miloCore:100,starMetal:500,aetherShard:500,moonCrystal:500}},
+      {id:"solar-cuirass",name:"Solar Cuirass",icon:"☀️🛡️",desc:"Armor that stores the heat of a star.",ability:"Solar Flare — 8% chance to find an extra Ember Stone on each roll.",luckBonus:3000,aura:"solar-crown",items:{gearScrap:500,emberStone:250,moonCrystal:100}},
+      {id:"glacier-greaves",name:"Glacier Greaves",icon:"🧊🥾",desc:"Boots carved from the heart of a glacier.",ability:"Absolute Zero — 8% chance to find an extra Moon Crystal on each roll.",luckBonus:3500,aura:"glacier-king",items:{gearScrap:600,emberStone:300,moonCrystal:200}},
+      {id:"dragon-scepter",name:"Dragon Scepter",icon:"🐉🪄",desc:"A scepter powered by sovereign dragonfire.",ability:"Sovereign Flame — 10% chance to find an extra Ember Stone on each roll.",luckBonus:4000,aura:"dragon-sovereign",items:{emberStone:500,moonCrystal:300,aetherShard:150}},
+      {id:"lunar-crown",name:"Lunar Crown",icon:"🌙👑",desc:"A crown that commands the tides of moonlight.",ability:"Moonlit Fortune — 8% chance to find an extra Moon Crystal on each roll.",luckBonus:4500,aura:"lunar-empress",items:{moonCrystal:500,aetherShard:250,starMetal:50}},
+      {id:"void-cloak",name:"Void Cloak",icon:"🕳️🧥",desc:"A cloak stitched from the gaps between worlds.",ability:"Void Slip — 7% chance to refund the spin you just used.",luckBonus:5000,aura:"void-walker",items:{aetherShard:500,starMetal:150}},
+      {id:"prism-orb",name:"Prism Orb",icon:"🔮🌈",desc:"A multi-spectrum relic that bends probability.",ability:"Spectrum Surge — 10% chance to find an extra Aether Shard on each roll.",luckBonus:6000,aura:"prism-heart",items:{moonCrystal:750,aetherShard:400,starMetal:250}},
+      {id:"celestial-bow",name:"Celestial Bow",icon:"🦊🏹",desc:"A constellation bow guided by a fox spirit.",ability:"Constellation Shot — 10% chance to find an extra Star Metal on each roll.",luckBonus:7000,aura:"celestial-fox",items:{emberStone:800,aetherShard:500,starMetal:300}},
+      {id:"eternal-sunblade",name:"Eternal Sunblade",icon:"🌞⚔️",desc:"A blade lit by an undying sun.",ability:"Endless Dawn — 10% chance to find an extra Ember Stone on each roll.",luckBonus:8500,aura:"eternal-sun",items:{moonCrystal:1000,aetherShard:700,starMetal:500}},
+      {id:"abyss-drake-armor",name:"Abyss Drake Armor",icon:"🐲🛡️",desc:"Dragon-scale armor from the edge of reality.",ability:"Abyssal Hoard — 10% chance to find an extra Milo Core on each roll.",luckBonus:10000,aura:"abyssal-dragon",items:{aetherShard:1000,starMetal:800,miloCore:20}},
+      {id:"julian-thomson-relic",name:"Julian Thomson Gauntlet",icon:"🧑‍🚀🌌",desc:"A cosmic relic forged in honor of Julian Thomson.",ability:"Thomson’s Singularity — 15% chance to refund the spin you just used.",luckBonus:15000,aura:"julian-thomson",items:{miloCore:100,starMetal:1500,aetherShard:1500,moonCrystal:1500}},
+      {id:"astral-paladin-aegis",name:"Astral Paladin Aegis",icon:"🛡️🌠",desc:"A star-forged shield sworn to protect the next age.",ability:"Astral Bastion — 12% chance to find an extra Star Metal.",luckBonus:18000,aura:"new-astral-paladin",items:{gearScrap:1800,emberStone:900,starMetal:600}},
+      {id:"frost-monarch-crown",name:"Frost Monarch Crown",icon:"❄️👑",desc:"A crown of eternal ice that never melts.",ability:"Frozen Fortune — 12% chance to find an extra Moon Crystal.",luckBonus:22000,aura:"new-frost-monarch",items:{emberStone:1200,moonCrystal:900,aetherShard:600}},
+      {id:"astral-kitsune-mask",name:"Astral Kitsune Mask",icon:"🦊🎭",desc:"A nine-tailed spirit's mask lit by distant constellations.",ability:"Foxfire Cache — 13% chance to find an extra Aether Shard.",luckBonus:27000,aura:"new-astral-kitsune",items:{moonCrystal:1500,aetherShard:1000,starMetal:700}},
+      {id:"aether-crown-regalia",name:"Aether Crown Regalia",icon:"👑💠",desc:"Regalia woven from the laws of creation.",ability:"Creation Spark — 14% chance to find an extra Star Metal.",luckBonus:33000,aura:"new-aether-crown",items:{aetherShard:1800,starMetal:1200,miloCore:15}},
+      {id:"origin-flame-edge",name:"Origin Flame Edge",icon:"🔥⚔️",desc:"A blade carrying the first flame before time began.",ability:"Origin Furnace — 14% chance to find an extra Ember Stone.",luckBonus:40000,aura:"new-origin-flame",items:{emberStone:2200,moonCrystal:1600,starMetal:1400}},
+      {id:"vanta-seraph-wings",name:"Vanta Seraph Wings",icon:"🖤🪽",desc:"Wings of silent darkness from beyond the known sky.",ability:"Vanta Harvest — 15% chance to find an extra Milo Core.",luckBonus:50000,aura:"new-vanta-seraph",items:{aetherShard:2500,starMetal:2000,miloCore:40}},
+      {id:"absolute-paradox-relic",name:"Absolute Paradox Relic",icon:"♾️💠",desc:"A relic that folds impossible timelines into one point.",ability:"Paradox Echo — 18% chance to refund the spin you just used.",luckBonus:65000,aura:"new-absolute-paradox",items:{moonCrystal:3000,aetherShard:3000,starMetal:3000,miloCore:60}},
+      {id:"genesis-overlord-armor",name:"Genesis Overlord Armor",icon:"🌟🛡️",desc:"Armor forged at the beginning and end of every universe.",ability:"Genesis Dividend — 18% chance to find an extra Star Metal.",luckBonus:80000,aura:"new-genesis-overlord",items:{emberStone:4000,moonCrystal:4000,aetherShard:4000,starMetal:4000,miloCore:100}}
+    ];
+    const GEAR_SLOTS = {
+      "twigblade":"Weapon", "frostfang":"Weapon", "crystalstaff":"Weapon", "infinityblade":"Weapon", "zenith-trident":"Weapon", "dragon-scepter":"Weapon", "celestial-bow":"Weapon", "eternal-sunblade":"Weapon",
+      "leafguard":"Shield", "thunderboots":"Boots", "glacier-greaves":"Boots", "dragonhelm":"Head", "lunar-crown":"Head", "auroracape":"Cloak", "void-cloak":"Cloak",
+      "cosmicarmor":"Armor", "solar-cuirass":"Armor", "abyss-drake-armor":"Armor", "milo-gauntlet":"Hands", "julian-thomson-relic":"Hands", "prism-orb":"Accessory",
+      "astral-paladin-aegis":"Shield", "frost-monarch-crown":"Head", "astral-kitsune-mask":"Head", "aether-crown-regalia":"Accessory", "origin-flame-edge":"Weapon", "vanta-seraph-wings":"Cloak", "absolute-paradox-relic":"Accessory", "genesis-overlord-armor":"Armor"
+    };
+    // Migrate older saves to a single equipped item. Keep the most recently
+    // stored valid item when possible; otherwise select the highest crafted tier.
+    if (!Array.isArray(gacha.equippedGear)) gacha.equippedGear = [];
+    gacha.equippedGear = gacha.equippedGear.filter(id => gacha.craftedGear.includes(id) && GEAR_SLOTS[id]);
+    if (gacha.equippedGear.length > 1) gacha.equippedGear = [gacha.equippedGear[gacha.equippedGear.length - 1]];
+    if (!gacha.equippedGear.length) {
+      const highestCrafted = [...GEAR_RECIPES].reverse().find(recipe => gacha.craftedGear.includes(recipe.id));
+      if (highestCrafted) gacha.equippedGear = [highestCrafted.id];
+    }
+    try { localStorage.setItem(GACHA_KEY, JSON.stringify(gacha)); } catch {}
+    const MATERIAL_NAMES = {gearScrap:"Gear Scrap",emberStone:"Ember Stone",moonCrystal:"Moon Crystal",aetherShard:"Aether Shard",starMetal:"Star Metal",miloCore:"Milo Core"};
+    const POTION_RECIPES = [
+      // Organized from the easiest, lowest-boost potions to the rarest endgame potions.
+      {id:"starter-spark",name:"Starter Spark Potion",icon:"✨🧪",desc:"+25% luck for your next 5 spins.",luckBonus:25,spins:5,ingredients:[{aura:"starter",amount:10,label:"10 Starter Glow"}]},
+      {id:"cloud-breeze",name:"Cloud Breeze Potion",icon:"☁️🧪",desc:"+40% luck for your next 5 spins.",luckBonus:40,spins:5,ingredients:[{aura:"cloud",amount:8,label:"8 Cloud Nine"}]},
+      {id:"sunny-day",name:"Sunny Day Boost Potion",icon:"☀️🧪",desc:"+50% luck for your next 10 spins.",luckBonus:50,spins:10,ingredients:[{aura:"sunny",amount:20,label:"20 Sunny Side"},{aura:"solar",amount:10,label:"10 Solar Flare"}]},
+      {id:"frost-focus",name:"Frost Focus Potion",icon:"❄️🧪",desc:"+75% luck for your next 3 spins.",luckBonus:75,spins:3,ingredients:[{aura:"frost",amount:8,label:"8 Frostbite"}]},
+      {id:"winter",name:"Winter Potion",icon:"❄️🧪",desc:"+80% luck for your next 5 spins.",luckBonus:80,spins:5,ingredients:[{aura:"frost",amount:20,label:"20 Frostbite"}]},
+      {id:"greater-winter",name:"Greater Winter Potion",icon:"🌨️🧪",desc:"+80% luck for your next 10 spins.",luckBonus:80,spins:10,ingredients:[{aura:"frost",amount:40,label:"40 Frostbite"}]},
+      {id:"solar-surge",name:"Solar Surge Potion",icon:"🌞🧪",desc:"+125% luck for your next 2 spins.",luckBonus:125,spins:2,ingredients:[{aura:"solar",amount:5,label:"5 Solar Flare"}]},
+      {id:"dragon",name:"Dragon Potion",icon:"🐉🧪",desc:"+300% luck for your next spin.",luckBonus:300,spins:1,ingredients:[{aura:"dragon",amount:10,label:"10 Dragonfire"}]},
+      {id:"moon",name:"Moon Potion",icon:"🌙🧪",desc:"+500% luck for your next spin.",luckBonus:500,spins:1,ingredients:[{aura:"moonlit",amount:5,label:"5 Moonlit Monarch"}]},
+      {id:"nebula-elixir",name:"Nebula Elixir",icon:"🌌🧪",desc:"+800% luck for your next 3 spins.",luckBonus:800,spins:3,ingredients:[{aura:"galaxy",amount:8,label:"8 Galaxy Emperor"}]},
+      {id:"aurora-elixir",name:"Aurora Elixir",icon:"🌈🧪",desc:"+1,000% luck for your next 2 spins.",luckBonus:1000,spins:2,ingredients:[{aura:"aurora",amount:6,label:"6 Aurora Veil"}]},
+      {id:"supernova-draught",name:"Supernova Draught",icon:"💫🧪",desc:"+1,200% luck for your next 2 spins.",luckBonus:1200,spins:2,ingredients:[{aura:"void-walker",amount:8,label:"8 Void Walker"}]},
+      {id:"cosmic-crown-tonic",name:"Cosmic Crown Tonic",icon:"👑🌠",desc:"+1,500% luck for your next 3 spins.",luckBonus:1500,spins:3,ingredients:[{aura:"eternal-sun",amount:8,label:"8 Eternal Sun"}]},
+      {id:"black-hole-brew",name:"Black Hole Brew",icon:"🕳️🧪",desc:"+2,000% luck for your next spin.",luckBonus:2000,spins:1,ingredients:[{aura:"singularity",amount:8,label:"8 Singularity"}]},
+      {id:"galactic-overdrive",name:"Galactic Overdrive Potion",icon:"🚀🌌",desc:"+2,500% luck for your next 2 spins.",luckBonus:2500,spins:2,ingredients:[{aura:"julian-thomson",amount:5,label:"5 Julian Thomson"},{aura:"abyssal-dragon",amount:5,label:"5 Abyssal Dragon"}]},
+      {id:"eclipse-potion",name:"Eclipse Potion",icon:"🌑🧪",desc:"+3,000% luck for your next spin. Forged from rare auras at the edge of the universe.",luckBonus:3000,spins:1,ingredients:[{aura:"eclipse",amount:10,label:"10 Total Eclipse"},{aura:"singularity",amount:5,label:"5 Singularity"},{aura:"primordial",amount:3,label:"3 Primordial One"},{aura:"habitflow",amount:1,label:"1 HABITFLOW: ASCENDED"}]},
+      {id:"jade-current-tonic",name:"Jade Current Tonic",icon:"🐟🧪",desc:"+100% luck for your next 8 spins.",luckBonus:100,spins:8,ingredients:[{aura:"new-jade-ripple",amount:8,label:"8 Jade Ripple"},{aura:"new-koi-spirit",amount:4,label:"4 Koi Spirit"}]},
+      {id:"nova-forge-elixir",name:"Nova Forge Elixir",icon:"🌠🧪",desc:"+350% luck for your next 5 spins.",luckBonus:350,spins:5,ingredients:[{aura:"new-silver-comet",amount:8,label:"8 Silver Comet"},{aura:"new-wildfire-crest",amount:5,label:"5 Wildfire Crest"}]},
+      {id:"dragon-emperor-draught",name:"Dragon Emperor Draught",icon:"🐲👑🧪",desc:"+700% luck for your next 3 spins.",luckBonus:700,spins:3,ingredients:[{aura:"new-chrono-dragon",amount:5,label:"5 Chrono Dragon"},{aura:"dragon-sovereign",amount:3,label:"3 Dragon Sovereign"}]},
+      {id:"divine-creation-phial",name:"Divine Creation Phial",icon:"💎🧪",desc:"+1,200% luck for your next 3 spins.",luckBonus:1200,spins:3,ingredients:[{aura:"new-jewel-of-creation",amount:4,label:"4 Jewel of Creation"},{aura:"new-first-light",amount:4,label:"4 First Light"}]},
+      {id:"secret-singularity-brew",name:"Secret Singularity Brew",icon:"🕳️✨🧪",desc:"+2,200% luck for your next 2 spins.",luckBonus:2200,spins:2,ingredients:[{aura:"new-quiet-singularity",amount:3,label:"3 Quiet Singularity"},{aura:"new-miracle-engine",amount:2,label:"2 Miracle Engine"}]},
+      {id:"transcendent-origin-elixir",name:"Transcendent Origin Elixir",icon:"♾️🌌🧪",desc:"+3,500% luck for your next 2 spins.",luckBonus:3500,spins:2,ingredients:[{aura:"new-absolute-paradox",amount:2,label:"2 Absolute Paradox"},{aura:"new-genesis-overlord",amount:1,label:"1 Genesis Overlord"},{aura:"beyond-milo",amount:1,label:"1 BEYOND MILO: NULL SOVEREIGN"}]},
+      {id:"milo-ban-potion",name:"Milo Ban Potion",icon:"🐈‍⬛🧪",desc:"A secret brew made from Milo Ban. +2,000% luck for your next 3 spins.",luckBonus:2000,spins:3,ingredients:[{aura:"milo-ban",amount:1,label:"1 MILO BAN"}]},
+      {id:"loki-potion",name:"Loki Potion",icon:"🐍🌲🧪",desc:"A trickster's legendary brew. +1,500% luck for your next 8 spins.",luckBonus:1500,spins:8,ingredients:[{aura:"new-yggdrasil-core",amount:8,label:"8 Yggdrasil Core"}]}
+    ];
+    function canCraftPotion(recipe) {
+      return recipe.ingredients.some(ingredient => {
+        if (recipe.id === "sunny-day") return (gacha.collection[ingredient.aura] || 0) >= ingredient.amount;
+        return recipe.ingredients.every(item => (gacha.collection[item.aura] || 0) >= item.amount);
+      });
+    }
+    function craftPotion(id) {
+      const recipe = POTION_RECIPES.find(item => item.id === id);
+      if (!recipe || !canCraftPotion(recipe)) return;
+      let cost = recipe.ingredients;
+      if (id === "sunny-day") cost = recipe.ingredients.find(item => (gacha.collection[item.aura] || 0) >= item.amount) ? [recipe.ingredients.find(item => (gacha.collection[item.aura] || 0) >= item.amount)] : [];
+      cost.forEach(item => { gacha.collection[item.aura] -= item.amount; });
+      gacha.potions[id] = (gacha.potions[id] || 0) + 1;
+      saveGacha(); renderRewards(); renderInventory();
+      const note = document.getElementById("potionNotice");
+      if (note) note.textContent = `${recipe.name} crafted. You now have ${gacha.potions[id]} in your bag. You can craft more whenever you have ingredients.`;
+    }
+    function usePotion(id) {
+      const recipe = POTION_RECIPES.find(item => item.id === id);
+      if (!recipe || !(gacha.potions[id] > 0)) return;
+      if (gacha.activePotion && gacha.activePotion.remaining > 0) {
+        const note = document.getElementById("potionNotice");
+        if (note) note.textContent = "A potion effect is already active. Finish its spins before using another potion.";
+        return;
+      }
+      gacha.potions[id] -= 1;
+      gacha.activePotion = {id:recipe.id,name:recipe.name,luckBonus:recipe.luckBonus,remaining:recipe.spins,totalSpins:recipe.spins};
+      saveGacha(); renderInventory(); renderRewards();
+      const note = document.getElementById("potionNotice");
+      if (note) note.textContent = `${recipe.name} activated: +${recipe.luckBonus}% luck for ${recipe.spins} spin${recipe.spins === 1 ? "" : "s"}.`;
+    }
+    function renderInventory() {
+      const ownedGrid = document.getElementById("ownedPotionGrid");
+      const recipeGrid = document.getElementById("potionRecipeGrid");
+      const pouch = document.getElementById("inventoryItemPouch");
+      if (!recipeGrid || !ownedGrid) return;
+      [ownedGrid,recipeGrid].forEach(grid => grid.innerHTML = "");
+      if (pouch) pouch.innerHTML = "";
+      const active = gacha.activePotion && gacha.activePotion.remaining > 0 ? gacha.activePotion : null;
+      document.getElementById("activePotionStatus").textContent = active ? `${active.name}: +${active.luckBonus}% luck · ${active.remaining}/${active.totalSpins} boosted spin${active.remaining === 1 ? "" : "s"} remaining.` : "No potion active. Gear luck boosts still apply.";
+      let ownedTotal = 0;
+      [...POTION_RECIPES].sort((a,b) => a.luckBonus - b.luckBonus || a.spins - b.spins || a.name.localeCompare(b.name)).forEach(recipe => {
+        const ownedCount = gacha.potions[recipe.id] || 0;
+        const target = recipeGrid;
+        const makeCard = (ownedMode) => {
+          const card = document.createElement("div"); card.className = "potion-card" + (ownedMode ? " owned-potion" : "");
+          const icon = document.createElement("div"); icon.className = "potion-icon"; icon.textContent = recipe.icon;
+          const title = document.createElement("h3"); title.textContent = recipe.name;
+          const desc = document.createElement("p"); desc.className = "muted small"; desc.textContent = recipe.desc;
+          const req = document.createElement("p"); req.className = "small"; req.textContent = recipe.id === "sunny-day" ? "Recipe: 20 Sunny Side OR 10 Solar Flare" : "Ingredients: " + recipe.ingredients.map(i => i.label).join(" + ");
+          const have = document.createElement("p"); have.className = "muted small"; have.textContent = recipe.id === "sunny-day" ? `Owned auras: Sunny Side ×${gacha.collection.sunny || 0} · Solar Flare ×${gacha.collection.solar || 0}` : recipe.ingredients.map(i => `${i.label} (have ${gacha.collection[i.aura] || 0})`).join(" · ");
+          const owned = document.createElement("p"); owned.className = "muted small"; owned.textContent = `In bag: ${ownedCount}`;
+          const button = document.createElement("button"); button.className = "potion-action"; button.type = "button";
+          if (ownedMode) {
+            if (active) {
+              button.textContent = active.id === recipe.id ? "Potion Active" : "Finish Active Potion First";
+              button.disabled = true;
+            } else {
+              button.textContent = `Use Potion${ownedCount > 1 ? ` · ${ownedCount} available` : ""}`;
+              button.disabled = false;
+            }
+            button.addEventListener("click", () => usePotion(recipe.id));
+            card.append(icon,title,desc,owned,button);
+          } else {
+            button.textContent = ownedCount > 0 ? `Craft Another · ${ownedCount} in Bag` : "Craft Potion";
+            button.disabled = !canCraftPotion(recipe);
+            button.addEventListener("click", () => craftPotion(recipe.id));
+            card.append(icon,title,desc,req,have,owned,button);
+          }
+          return card;
+        };
+        if (ownedCount > 0) {
+          ownedTotal += ownedCount;
+          ownedGrid.appendChild(makeCard(true));
+        }
+        target.appendChild(makeCard(false));
+      });
+      document.getElementById("ownedPotionEmpty").style.display = ownedTotal ? "none" : "block";
+      document.getElementById("potionCraftEmpty").style.display = POTION_RECIPES.length ? "none" : "block";
+      if (pouch) ["gearScrap","emberStone","moonCrystal","aetherShard","starMetal","miloCore"].forEach(key => {
+        const chip = document.createElement("span"); chip.className = "item-chip"; chip.textContent = `${MATERIAL_NAMES[key]} ×${gacha.items[key] || 0}`; pouch.appendChild(chip);
+      });
+    }
+    function getTotalLuckBoost() {
+      return GEAR_RECIPES.reduce((total, recipe) => total + (gacha.equippedGear.includes(recipe.id) ? (recipe.luckBonus || 0) : 0), 0);
+    }
+    function canCraftGear(recipe, index) {
+      if (gacha.craftedGear.includes(recipe.id) || (index > 0 && !gacha.craftedGear.includes(GEAR_RECIPES[index - 1].id))) return false;
+      if (!(gacha.collection[recipe.aura] > 0)) return false;
+      return Object.entries(recipe.items).every(([key, amount]) => (gacha.items[key] || 0) >= amount);
+    }
+    function equipGear(id) {
+      if (!gacha.craftedGear.includes(id) || !GEAR_SLOTS[id]) return;
+      if (gacha.equippedGear.includes(id)) return;
+      gacha.equippedGear = [id];
+      saveGacha(); renderGear(); renderInventory();
+      const recipe = GEAR_RECIPES.find(item => item.id === id);
+      const note = document.getElementById("gearNotice");
+      if (note) note.textContent = `${recipe ? recipe.name : id} equipped. This is your only equipped gear item.`;
+    }
+    function unequipGear(id) {
+      if (!gacha.equippedGear.includes(id)) return;
+      gacha.equippedGear = gacha.equippedGear.filter(equippedId => equippedId !== id);
+      saveGacha(); renderGear(); renderInventory();
+      const recipe = GEAR_RECIPES.find(item => item.id === id);
+      const note = document.getElementById("gearNotice");
+      if (note) note.textContent = `${recipe ? recipe.name : id} unequipped. No gear bonuses or gear abilities are active until you equip an item.`;
+    }
+    function craftGear(id) {
+      const index = GEAR_RECIPES.findIndex(item => item.id === id);
+      const recipe = GEAR_RECIPES[index];
+      if (!recipe || !canCraftGear(recipe, index)) return;
+      Object.entries(recipe.items).forEach(([key, amount]) => { gacha.items[key] -= amount; });
+      gacha.craftedGear.push(id);
+      // Crafting does not automatically equip gear; the player chooses one item.
+      saveGacha(); renderGear(); renderInventory();
+      const note = document.getElementById("gearNotice");
+      if (note) note.textContent = id === "julian-thomson-relic" ? "JULIAN THOMSON GAUNTLET FORGED! You reached the final tier." : `${recipe.name} crafted. Your next gear tier is now available.`;
+    }
+    function renderGear() {
+      const pouch = document.getElementById("itemPouch");
+      const grid = document.getElementById("gearGrid");
+      const loadout = document.getElementById("equippedGearSummary");
+      if (!pouch || !grid) return;
+      const luckNode = document.getElementById("totalLuckBoost");
+      if (luckNode) luckNode.textContent = `Total Gear Luck Boost: +${getTotalLuckBoost()}% (scales aura weights progressively by rarity)`;
+      pouch.innerHTML = ""; grid.innerHTML = "";
+      if (loadout) {
+        loadout.innerHTML = "";
+        const equippedRecipes = GEAR_RECIPES.filter(recipe => gacha.equippedGear.includes(recipe.id));
+        if (!equippedRecipes.length) {
+          const empty = document.createElement("span"); empty.className = "item-chip"; empty.textContent = "No gear equipped yet"; loadout.appendChild(empty);
+        } else {
+          const recipe = equippedRecipes[0];
+          const chip = document.createElement("span"); chip.className = "item-chip"; chip.textContent = `${recipe.icon} ${recipe.name} · ${GEAR_SLOTS[recipe.id]}`; loadout.appendChild(chip);
+        }
+      }
+      const materialOrder = ["gearScrap","emberStone","moonCrystal","aetherShard","starMetal","miloCore"];
+      materialOrder.forEach(key => {
+        const chip = document.createElement("span"); chip.className = "item-chip";
+        chip.textContent = `${MATERIAL_NAMES[key]} ×${gacha.items[key] || 0}`; pouch.appendChild(chip);
+      });
+      GEAR_RECIPES.forEach((recipe, index) => {
+        const crafted = gacha.craftedGear.includes(recipe.id);
+        const available = canCraftGear(recipe, index);
+        const equipped = gacha.equippedGear.includes(recipe.id);
+        const slotName = GEAR_SLOTS[recipe.id] || "Accessory";
+        const card = document.createElement("div"); card.className = "gear-card" + (available || crafted ? "" : " locked") + (equipped ? " equipped" : "") + (index === GEAR_RECIPES.length - 1 ? " final-gear" : "");
+        const slot = document.createElement("span"); slot.className = "gear-slot"; slot.textContent = `${slotName}${equipped ? " · EQUIPPED" : ""}`;
+        const art = document.createElement("div"); art.className = "gear-art";
+        if (index === GEAR_RECIPES.length - 1) art.innerHTML = '<div class="milo-gauntlet" aria-label="Milo dog infinity gauntlet">🐕<br>♾️<br>🐾</div>';
+        else art.textContent = recipe.icon;
+        const title = document.createElement("strong"); title.textContent = `${index + 1}. ${recipe.name}`;
+        const desc = document.createElement("p"); desc.className = "muted small"; desc.style.lineHeight = "1.5"; desc.textContent = recipe.desc;
+        const luck = document.createElement("p"); luck.className = "gear-luck"; luck.style.cssText = "font-weight:800;color:#bda1ff;margin:8px 0"; luck.textContent = `LUCK BOOST: +${recipe.luckBonus}%`;
+        const aura = AURAS.find(a => a.id === recipe.aura);
+        const needs = document.createElement("div"); needs.className = "gear-recipe";
+        needs.textContent = `Aura: ${aura ? aura.name : recipe.aura} ${gacha.collection[recipe.aura] ? "✓" : "✗"}\n` + Object.entries(recipe.items).map(([key, amount]) => `${MATERIAL_NAMES[key]} ${gacha.items[key] || 0}/${amount}`).join(" · ");
+        needs.style.whiteSpace = "pre-line";
+        const status = document.createElement("div"); status.className = "gear-status"; status.textContent = equipped ? "✓ EQUIPPED" : crafted ? "CRAFTED · NOT EQUIPPED" : available ? "READY TO CRAFT" : index > 0 && !gacha.craftedGear.includes(GEAR_RECIPES[index-1].id) ? "LOCKED · CRAFT PREVIOUS TIER" : "MATERIALS NEEDED";
+        const button = document.createElement("button"); button.className = "gear-craft"; button.type = "button"; button.textContent = crafted ? "Crafted" : "Forge Gear"; button.disabled = !available; button.addEventListener("click", () => craftGear(recipe.id));
+        const equipButton = document.createElement("button"); equipButton.className = "gear-equip"; equipButton.type = "button";
+        equipButton.textContent = equipped ? "Unequip" : "Equip this gear";
+        equipButton.disabled = !crafted;
+        equipButton.addEventListener("click", () => equipped ? unequipGear(recipe.id) : equipGear(recipe.id));
+        const ability = document.createElement("p"); ability.className = "muted small gear-ability"; ability.style.cssText = "line-height:1.5;margin:8px 0;padding:8px;border-radius:8px;background:rgba(160,130,255,.10)"; ability.textContent = recipe.ability ? `ABILITY: ${recipe.ability}${equipped ? " · ACTIVE" : " · INACTIVE UNTIL EQUIPPED"}` : "ABILITY: No special passive";
+        card.append(slot,art,title,desc,luck,ability,needs,status,button,equipButton); grid.appendChild(card);
+      });
+    }
+
+    function renderRewards(recentId = null) {
+      // Keep legacy XP values out of the RNG game; spins are the main reward.
+      document.getElementById("spinCount").textContent = gacha.spins;
+      const progress = Math.max(0, Math.min(999, gacha.ultimateProgress || 0));
+      const progressLabel = document.getElementById("ultimateProgressLabel");
+      const progressFill = document.getElementById("ultimateProgressFill");
+      const progressBar = document.getElementById("ultimateProgressBar");
+      const ultimateButton = document.getElementById("ultimateSpinButton");
+      if (progressLabel) progressLabel.textContent = `${progress} / 1000`;
+      if (progressFill) progressFill.style.width = `${progress / 10}%`;
+      if (progressBar) progressBar.setAttribute("aria-valuenow", String(progress));
+      if (ultimateButton) {
+        ultimateButton.disabled = (gacha.ultimateSpins || 0) < 1 || rolling;
+        ultimateButton.textContent = `✦ ULTIMATE SPIN · ${gacha.ultimateSpins || 0} AVAILABLE`;
+      }
+      document.getElementById("spinButton").disabled = gacha.spins < 1 || rolling;
+      if (!rolling) document.getElementById("spinButton").textContent = gacha.spins < 1 ? "COMPLETE HABITS TO EARN SPINS" : "✦ ROLL AURA";
+      const discovered = AURAS.filter(a => gacha.collection[a.id]).length;
+      document.getElementById("auraDiscovered").textContent = `${discovered} / ${AURAS.length}`;
+      const logbook = document.getElementById("rarityLogbook");
+      if (logbook) {
+        const rarityOrder = ["Common","Uncommon","Rare","Epic","Legendary","Mythic","Divine","Secret","??? SECRET ???","TRANSCENDENT","ABSOLUTE"];
+        logbook.innerHTML = "";
+        rarityOrder.forEach(rarity => {
+          const tierAuras = AURAS.filter(a => a.rarity === rarity);
+          if (!tierAuras.length) return;
+          const found = tierAuras.filter(a => (gacha.collection[a.id] || 0) > 0).length;
+          const row = document.createElement("div"); row.className = "odds-row";
+          const label = document.createElement("span"); label.className = `rarity-${rarity.toLowerCase().replace(/[^a-z]/g, "")}`; label.textContent = rarity;
+          const count = document.createElement("strong"); count.textContent = `${found} / ${tierAuras.length}`;
+          row.append(label, count); logbook.appendChild(row);
+        });
+      }
+      document.getElementById("rollsUsed").textContent = gacha.rolls;
+      const rank = {Common:1,Uncommon:2,Rare:3,Epic:4,Legendary:5,Mythic:6,Divine:7,Secret:8,"??? SECRET ???":9,TRANSCENDENT:10,ABSOLUTE:11};
+      const best = AURAS.filter(a => gacha.collection[a.id]).sort((a,b)=>rank[b.rarity]-rank[a.rarity])[0];
+      document.getElementById("bestRarity").textContent = best ? best.rarity : "None yet";
+      const resultId = recentId || gacha.lastAura;
+      const result = AURAS.find(a => a.id === resultId);
+      const resultBox = document.getElementById("auraResult");
+      if (result) {
+        resultBox.classList.add("show");
+        document.getElementById("auraResultIcon").textContent = result.icon;
+        document.getElementById("auraResultRarity").textContent = result.rarity;
+        document.getElementById("auraResultRarity").className = `aura-rarity rarity-${result.rarity.toLowerCase()}`;
+        document.getElementById("auraResultName").textContent = result.name;
+        document.getElementById("auraResultDesc").textContent = `You own ${gacha.collection[result.id]} · ${result.desc}`;
+      } else resultBox.classList.remove("show");
+      const potionCraftAuras = document.getElementById("potionCraftAuras");
+      const otherAuras = document.getElementById("otherAuras");
+      if (!potionCraftAuras || !otherAuras) return;
+      potionCraftAuras.innerHTML = "";
+      otherAuras.innerHTML = "";
+      const potionIngredientIds = new Set(POTION_RECIPES.flatMap(recipe => recipe.ingredients.map(ingredient => ingredient.aura)));
+      AURAS.forEach(aura => {
+        const count = gacha.collection[aura.id] || 0;
+        // Keep unknown auras hidden from the inventory until the player discovers them.
+        if (count <= 0) return;
+        const card = document.createElement("div"); card.className = "aura-card";
+        if (count > 0) {
+          card.setAttribute("role", "button"); card.tabIndex = 0;
+          card.setAttribute("aria-label", `View ${aura.name} cutscene`);
+          card.title = "Click to watch this aura's cutscene";
+          card.addEventListener("click", () => { if (!rolling) playRarityCinematic(aura, true); });
+          card.addEventListener("keydown", event => { if ((event.key === "Enter" || event.key === " ") && !rolling) { event.preventDefault(); playRarityCinematic(aura, true); } });
+        }
+        const icon = document.createElement("div"); icon.style.fontSize = "32px"; icon.textContent = count ? aura.icon : "❔";
+        const name = document.createElement("strong"); name.style.display = "block"; name.style.marginTop = "6px"; name.textContent = count ? aura.name : "Undiscovered";
+        const rarity = document.createElement("div"); rarity.className = `small rarity-${aura.rarity.toLowerCase()}`; rarity.style.marginTop = "4px"; rarity.textContent = aura.rarity;
+        const owned = document.createElement("div"); owned.className = "muted small"; owned.style.marginTop = "4px"; owned.textContent = count ? `Owned ×${count}` : "???";
+        card.append(icon,name,rarity,owned);
+        if (count > 0) {
+          const sell = document.createElement("button");
+          sell.type = "button";
+          sell.className = "sell-aura-btn";
+          sell.textContent = count > 1 ? `SELL DUPLICATE · +${SELL_VALUES[aura.rarity] ?? 1} CHARGE` : "KEEP LAST COPY";
+          sell.disabled = count <= 1 || rolling;
+          sell.addEventListener("click", event => { event.stopPropagation(); sellAura(aura.id); });
+          card.appendChild(sell);
+        }
+        (potionIngredientIds.has(aura.id) ? potionCraftAuras : otherAuras).appendChild(card);
+      });
+      renderGear();
+      renderInventory();
+    }
+
+    function renderFocusStats() {
+      document.getElementById("focusMinutes").textContent = data.totalMinutes;
+      document.getElementById("focusSessions").textContent = data.totalSessions;
+      document.getElementById("sessionsToday").textContent = Math.floor(currentStudyMinutes() / 25);
+      document.getElementById("statsMinutes").textContent = `${data.totalMinutes} min`;
+      document.getElementById("statsSessions").textContent = data.totalSessions;
+      document.getElementById("todayStudy").textContent = `${currentStudyMinutes()} min`;
+    }
+
+    let remaining = 25 * 60;
+    let timerId = null;
+    let endTime = null;
+    function drawTimer() {
+      const mins = Math.floor(remaining / 60).toString().padStart(2, "0");
+      const secs = Math.floor(remaining % 60).toString().padStart(2, "0");
+      document.getElementById("timerDisplay").textContent = `${mins}:${secs}`;
+      document.getElementById("timerRing").style.setProperty("--ring", `${remaining / 1500 * 100}%`);
+      document.getElementById("startBtn").disabled = timerId !== null || remaining === 0;
+      document.getElementById("pauseBtn").disabled = timerId === null;
+    }
+    function completeSession() {
+      remaining = 0;
+      data.totalSessions += 1;
+      gacha.spins += 5; saveGacha();
+      data.totalMinutes += 25;
+      data.studyByDate[todayKey()] = currentStudyMinutes() + 25;
+      save();
+      document.getElementById("timerCaption").textContent = "Session complete — well done";
+      renderFocusStats(); renderHabits(); renderChart(); renderRewards(); drawTimer();
+    }
+    function tick() {
+      remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+      if (remaining <= 0) {
+        clearInterval(timerId); timerId = null; endTime = null; completeSession();
+      } else drawTimer();
+    }
+    document.getElementById("startBtn").addEventListener("click", () => {
+      if (timerId !== null || remaining <= 0) return;
+      endTime = Date.now() + remaining * 1000;
+      timerId = setInterval(tick, 250);
+      document.getElementById("timerCaption").textContent = "Focus in progress";
+      drawTimer();
+    });
+    document.getElementById("pauseBtn").addEventListener("click", () => {
+      if (timerId === null) return;
+      clearInterval(timerId); timerId = null; remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000)); endTime = null;
+      document.getElementById("timerCaption").textContent = "Paused — take your time";
+      drawTimer();
+    });
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      if (timerId !== null) clearInterval(timerId);
+      timerId = null; endTime = null; remaining = 1500;
+      document.getElementById("timerCaption").textContent = "Ready when you are";
+      drawTimer();
+    });
+
+    // A small original lo-fi loop synthesized locally with the Web Audio API.
+    // Browsers require a user click before audio can start.
+    let audioContext = null;
+    let musicMaster = null;
+    let musicPlaying = false;
+    let musicTimer = null;
+    let musicStep = 0;
+    const musicVisual = document.getElementById("musicVisual");
+    const musicToggle = document.getElementById("musicToggle");
+    const musicVolume = document.getElementById("musicVolume");
+    const musicStatus = document.getElementById("musicStatus");
+    const volumeLabel = document.getElementById("volumeLabel");
+    const chordLoop = [
+      [261.63, 329.63, 392.00, 493.88],
+      [220.00, 261.63, 329.63, 392.00],
+      [174.61, 220.00, 261.63, 349.23],
+      [196.00, 246.94, 293.66, 392.00]
+    ];
+
+    function playSoftNote(frequency, startAt, duration, volume, type = "sine") {
+      const oscillator = audioContext.createOscillator();
+      const envelope = audioContext.createGain();
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(frequency, startAt);
+      envelope.gain.setValueAtTime(0.0001, startAt);
+      envelope.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), startAt + 0.035);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+      oscillator.connect(envelope);
+      envelope.connect(musicMaster);
+      oscillator.start(startAt);
+      oscillator.stop(startAt + duration + 0.03);
+    }
+
+    function scheduleMusicStep() {
+      if (!musicPlaying || !audioContext) return;
+      const now = audioContext.currentTime;
+      const chord = chordLoop[Math.floor(musicStep / 4) % chordLoop.length];
+      // Soft chord, rounded bass, and a simple high note form a mellow repeating loop.
+      if (musicStep % 4 === 0) {
+        chord.forEach((note, index) => playSoftNote(note, now, 1.65, index === 0 ? 0.045 : 0.022));
+        playSoftNote(chord[0] / 2, now, 1.8, 0.11, "triangle");
+      }
+      const melody = [chord[2] * 2, chord[1] * 2, chord[3] * 2, chord[2] * 2];
+      playSoftNote(melody[musicStep % melody.length], now + 0.12, 0.32, 0.018);
+      musicStep = (musicStep + 1) % 16;
+      musicTimer = setTimeout(scheduleMusicStep, 420);
+    }
+
+    async function toggleMusic() {
+      if (musicPlaying) {
+        musicPlaying = false;
+        clearTimeout(musicTimer);
+        if (audioContext) await audioContext.suspend();
+        musicToggle.textContent = "▶";
+        musicToggle.setAttribute("aria-label", "Play lo-fi music");
+        musicVisual.classList.remove("playing");
+        musicStatus.textContent = "Music paused. Press play to resume.";
+        return;
+      }
+      try {
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          musicMaster = audioContext.createGain();
+          musicMaster.gain.value = Number(musicVolume.value) / 100 * 0.7;
+          musicMaster.connect(audioContext.destination);
+        }
+        await audioContext.resume();
+        musicPlaying = true;
+        musicToggle.textContent = "Ⅱ";
+        musicToggle.setAttribute("aria-label", "Pause lo-fi music");
+        musicVisual.classList.add("playing");
+        musicStatus.textContent = "Playing a soft, original lo-fi loop generated by your browser.";
+        scheduleMusicStep();
+      } catch (error) {
+        musicStatus.textContent = "Audio could not start in this browser. Try clicking play again.";
+      }
+    }
+    musicToggle.addEventListener("click", toggleMusic);
+    musicVolume.addEventListener("input", () => {
+      const volume = Number(musicVolume.value);
+      volumeLabel.textContent = `${volume}%`;
+      if (musicMaster) musicMaster.gain.setTargetAtTime(volume / 100 * 0.7, audioContext.currentTime, 0.04);
+    });
+
+    function renderChart() {
+      const chart = document.getElementById("weeklyChart");
+      chart.innerHTML = "";
+      const dates = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const key = todayKey(date);
+        dates.push({ key, label: date.toLocaleDateString(undefined, { weekday: "short" }), minutes: data.studyByDate[key] || 0 });
+      }
+      const max = Math.max(25, ...dates.map(d => d.minutes));
+      dates.forEach(d => {
+        const col = document.createElement("div"); col.className = "chart-col";
+        const value = document.createElement("div"); value.className = "chart-value"; value.textContent = d.minutes ? `${d.minutes}m` : "—";
+        const wrap = document.createElement("div"); wrap.className = "bar-wrap";
+        const bar = document.createElement("div"); bar.className = "bar" + (d.key === todayKey() ? " today" : "");
+        bar.style.height = `${Math.max(d.minutes ? 8 : 2, d.minutes / max * 100)}%`;
+        bar.title = `${d.label}: ${d.minutes} minutes`;
+        wrap.appendChild(bar);
+        const label = document.createElement("div"); label.className = "chart-label"; label.textContent = d.label;
+        col.append(value, wrap, label); chart.appendChild(col);
+      });
+    }
+
+    // Settings are saved locally in this browser.
+    const SETTINGS_KEY = "habitflow-settings-v1";
+    let savedSettings = {};
+    try { savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch { savedSettings = {}; }
+    const settingsMusicVolume = document.getElementById("settingsMusicVolume");
+    const settingsMusicVolumeLabel = document.getElementById("settingsMusicVolumeLabel");
+    const settingsEffectsVolume = document.getElementById("settingsEffectsVolume");
+    const settingsEffectsVolumeLabel = document.getElementById("settingsEffectsVolumeLabel");
+    const settingsCutsceneVolume = document.getElementById("settingsCutsceneVolume");
+    const settingsCutsceneVolumeLabel = document.getElementById("settingsCutsceneVolumeLabel");
+    const settingsEnableF9 = document.getElementById("settingsEnableF9");
+    const musicInitialVolume = Number.isFinite(savedSettings.musicVolume) ? savedSettings.musicVolume : 35;
+    const effectsInitialVolume = Number.isFinite(savedSettings.effectsVolume) ? savedSettings.effectsVolume : 100;
+    const cutsceneInitialVolume = Number.isFinite(savedSettings.cutsceneVolume) ? savedSettings.cutsceneVolume : 100;
+    const enableF9Initial = savedSettings.enableF9 !== false;
+    settingsMusicVolume.value = String(Math.max(0, Math.min(100, musicInitialVolume)));
+    settingsEffectsVolume.value = String(Math.max(0, Math.min(100, effectsInitialVolume)));
+    settingsCutsceneVolume.value = String(Math.max(0, Math.min(100, cutsceneInitialVolume)));
+    settingsEnableF9.checked = enableF9Initial;
+    cutsceneSoundVolume = Number(settingsCutsceneVolume.value) / 100;
+    musicVolume.value = settingsMusicVolume.value;
+    volumeLabel.textContent = `${musicVolume.value}%`;
+    settingsMusicVolumeLabel.textContent = `${settingsMusicVolume.value}%`;
+    settingsEffectsVolumeLabel.textContent = `${settingsEffectsVolume.value}%`;
+    settingsCutsceneVolumeLabel.textContent = `${settingsCutsceneVolume.value}%`;
+    spinSoundVolume = Number(settingsEffectsVolume.value) / 100;
+    function saveSettings() {
+      try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ musicVolume: Number(settingsMusicVolume.value), effectsVolume: Number(settingsEffectsVolume.value), cutsceneVolume: Number(settingsCutsceneVolume.value), enableF9: settingsEnableF9.checked })); } catch {}
+    }
+    settingsMusicVolume.addEventListener("input", () => {
+      musicVolume.value = settingsMusicVolume.value;
+      settingsMusicVolumeLabel.textContent = `${settingsMusicVolume.value}%`;
+      volumeLabel.textContent = `${musicVolume.value}%`;
+      if (musicMaster && audioContext) musicMaster.gain.setTargetAtTime(Number(musicVolume.value) / 100 * 0.7, audioContext.currentTime, 0.04);
+      saveSettings();
+    });
+    settingsEffectsVolume.addEventListener("input", () => {
+      spinSoundVolume = Number(settingsEffectsVolume.value) / 100;
+      settingsEffectsVolumeLabel.textContent = `${settingsEffectsVolume.value}%`;
+      saveSettings();
+    });
+    settingsCutsceneVolume.addEventListener("input", () => {
+      cutsceneSoundVolume = Number(settingsCutsceneVolume.value) / 100;
+      settingsCutsceneVolumeLabel.textContent = `${settingsCutsceneVolume.value}%`;
+      saveSettings();
+    });
+    settingsEnableF9.addEventListener("change", saveSettings);
+    document.addEventListener("keydown", event => {
+      if (event.key !== "F9" || !settingsEnableF9.checked) return;
+      event.preventDefault();
+      document.body.classList.toggle("study-only");
+      if (document.body.classList.contains("study-only") && ["inventoryPage", "rewardsPage"].includes(document.querySelector(".page.active")?.id)) {
+        document.querySelector('.nav-btn[data-page="todayPage"]').click();
+      }
+    });
+    musicVolume.addEventListener("input", () => {
+      settingsMusicVolume.value = musicVolume.value;
+      settingsMusicVolumeLabel.textContent = `${musicVolume.value}%`;
+      saveSettings();
+    });
+    document.getElementById("redeemCodeForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const input = document.getElementById("redeemCode");
+      const message = document.getElementById("redeemCodeMessage");
+      const code = input.value.trim();
+      message.className = "code-message";
+      const normalizedCode = code.toLowerCase();
+      const rewardsByCode = {
+        "miloislove": { key: "habitflow-redeemed-code-miloislove-v1", grant: () => { gacha.spins += 100; }, message: "Code redeemed! 100 spins have been added to your account." },
+        "srykaisei": { key: "habitflow-redeemed-code-srykaisei-v1", grant: () => { gacha.ultimateSpins = (gacha.ultimateSpins || 0) + 5; gacha.potions["supernova-draught"] = (gacha.potions["supernova-draught"] || 0) + 1; }, message: "Code redeemed! You received 5 Ultimate Spins and 1 Supernova Draught." },
+        "hello world": { key: "habitflow-redeemed-code-hello-world-v1", grant: () => { gacha.spins += 1500; }, message: "Code redeemed! 1,500 spins have been added to your account." }
+      };
+      const reward = rewardsByCode[normalizedCode];
+      if (!reward) {
+        message.textContent = "That code is not valid.";
+        message.classList.add("error");
+        return;
+      }
+      if (localStorage.getItem(reward.key) === "true") {
+        message.textContent = "This code has already been redeemed in this browser.";
+        message.classList.add("error");
+        return;
+      }
+      reward.grant();
+      saveGacha();
+      try { localStorage.setItem(reward.key, "true"); } catch {}
+      renderRewards();
+      renderPotions();
+      input.value = "";
+      message.textContent = reward.message;
+      message.classList.add("success");
+    });
+
+    document.querySelectorAll(".nav-btn").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b === button));
+        document.querySelectorAll(".page").forEach(page => page.classList.toggle("active", page.id === button.dataset.page));
+        if (button.dataset.page === "progressPage") { renderHabits(); renderFocusStats(); renderChart(); }
+        if (button.dataset.page === "rewardsPage") { renderRewards(); }
+        if (button.dataset.page === "inventoryPage") { renderInventory(); }
+        if (button.dataset.page === "leaderboardPage") { window.habitFlowRefreshLeaderboard?.(); }
+      });
+    });
+
+
+    document.getElementById("dateChip").textContent = new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    renderHabits(); renderFocusStats(); renderChart(); renderRewards(); drawTimer();
+  </script>
+
+  <script>
+  (() => {
+    "use strict";
+    // Replace these values with the config from Firebase Console > Project settings > Your apps.
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCgYJS09GW2gPbyOSaPkxDW2lR9tjVc-k",
+      authDomain: "habitflaw.firebaseapp.com",
+      projectId: "habitflaw",
+      appId: "1:192087311727:web:2a6b625f5c9588ba50949a"
+    };
+
+    const gate = document.getElementById("hfAuthGate");
+    const statusEl = document.getElementById("hfAuthStatus");
+    const submitBtn = document.getElementById("hfAuthSubmit");
+    const switchBtn = document.getElementById("hfAuthSwitch");
+    const googleBtn = document.getElementById("hfGoogleLogin");
+    const form = document.getElementById("hfAuthForm");
+    const emailEl = document.getElementById("hfEmail");
+    const passwordEl = document.getElementById("hfPassword");
+    const accountBar = document.getElementById("hfAccountBar");
+    const cloudStatus = document.getElementById("hfCloudStatus");
+    const accountEmail = document.getElementById("hfAccountEmail");
+    const setupNotice = document.getElementById("hfFirebaseSetupNotice");
+
+    let mode = "signin";
+    let auth = null, db = null, currentUser = null, ready = false;
+    let loadingUid = null, loadedUid = null;
+    let applyingCloudData = false, saveTimer = null, lastSnapshot = null;
+    const CLOUD_DOC = "habitflow/state";
+    const APP_KEYS = [
+      "habitflow-custom-habits-v1",
+      "habitflow-data-v1",
+      "habitflow-aura-rng-v1",
+      "habitflow-settings-v1"
+    ];
+
+    const configured = firebaseConfig.apiKey.startsWith("AIza") &&
+      !firebaseConfig.projectId.includes("PASTE_") &&
+      !firebaseConfig.appId.includes("PASTE_");
+
+    function setStatus(message, isError = false) {
+      statusEl.textContent = message;
+      statusEl.style.color = isError ? "#ff9caa" : "#b8bfd1";
+    }
+    function showGate(show) { gate.hidden = !show; }
+    function setMode(next) {
+      mode = next;
+      const signup = mode === "signup";
+      document.getElementById("hfAuthTitle").textContent = signup ? "Create your HabitFlow account" : "Welcome back";
+      submitBtn.textContent = signup ? "Create account" : "Sign in";
+      switchBtn.textContent = signup ? "Already have an account? Sign in" : "Need an account? Create one";
+      passwordEl.autocomplete = signup ? "new-password" : "current-password";
+      setStatus(signup ? "New accounts start with fresh data." : "Sign in to load your cloud save.");
+    }
+    switchBtn.addEventListener("click", () => setMode(mode === "signin" ? "signup" : "signin"));
+
+    function getSnapshot() {
+      const data = {};
+      for (const key of APP_KEYS) {
+        const value = localStorage.getItem(key);
+        if (value !== null) data[key] = value;
+      }
+      return data;
+    }
+    function applySnapshot(data) {
+      applyingCloudData = true;
+      try {
+        // Start fresh for this account; do not import the browser's previous account/local data.
+        for (const key of APP_KEYS) localStorage.removeItem(key);
+        for (const key of APP_KEYS) {
+          if (typeof data[key] === "string") localStorage.setItem(key, data[key]);
+        }
+      } finally {
+        applyingCloudData = false;
+      }
+      lastSnapshot = JSON.stringify(getSnapshot());
+    }
+    async function loadUserData(user) {
+      if (!user) return;
+      if (ready && currentUser && currentUser.uid === user.uid && loadedUid === user.uid) return;
+      if (loadingUid === user.uid) return;
+      loadingUid = user.uid;
+      cloudStatus.textContent = "Loading cloud save…";
+      const ref = db.doc("users/" + user.uid + "/" + CLOUD_DOC);
+      const snap = await ref.get();
+      if (snap.exists && snap.data() && snap.data().payload) {
+        applySnapshot(snap.data().payload);
+      } else {
+        // Fresh account: write only default/empty state, never copy previous browser data.
+        applySnapshot({});
+        await ref.set({ payload: {}, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), schemaVersion: 1 });
+        lastSnapshot = JSON.stringify({});
+      }
+      currentUser = user;
+      ready = true;
+      loadedUid = user.uid;
+      loadingUid = null;
+      accountEmail.textContent = user.email || user.displayName || "Google account";
+      accountBar.hidden = false;
+      cloudStatus.textContent = "Cloud save ready";
+      showGate(false);
+      // Do not reload here. onAuthStateChanged fires on page load and after sign-in;
+      // reloading from this function creates an infinite authentication/reload loop.
+      // The cloud snapshot is applied in-place and the account UI is updated above.
+    }
+    async function saveCloudNow() {
+      if (!currentUser || !ready || applyingCloudData) return;
+      const payload = getSnapshot();
+      const serialized = JSON.stringify(payload);
+      if (serialized === lastSnapshot) return;
+      cloudStatus.textContent = "Saving…";
+      try {
+        await db.doc("users/" + currentUser.uid + "/" + CLOUD_DOC).set({
+          payload,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          schemaVersion: 1
+        }, { merge: true });
+        lastSnapshot = serialized;
+        cloudStatus.textContent = "All changes saved";
+      } catch (err) {
+        console.error("HabitFlow cloud save failed", err);
+        cloudStatus.textContent = "Save failed";
+        setStatus("Could not save to cloud: " + (err.message || "Check Firebase configuration and Firestore rules."), true);
+      }
+    }
+    function scheduleSave() {
+      if (!currentUser || !ready || applyingCloudData) return;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveCloudNow, 700);
+    }
+
+    // Detect app writes to the existing localStorage keys and mirror them to Firestore.
+    const originalSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(key, value) {
+      originalSetItem.call(this, key, value);
+      if (this === localStorage && APP_KEYS.includes(String(key))) scheduleSave();
+    };
+    const originalRemoveItem = Storage.prototype.removeItem;
+    Storage.prototype.removeItem = function(key) {
+      originalRemoveItem.call(this, key);
+      if (this === localStorage && APP_KEYS.includes(String(key))) scheduleSave();
+    };
+    window.addEventListener("pagehide", () => { if (currentUser && ready) saveCloudNow(); });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveCloudNow(); });
+
+    document.getElementById("hfSignOut").addEventListener("click", async () => {
+      if (!auth) return;
+      try {
+        await saveCloudNow();
+        await auth.signOut();
+        currentUser = null; ready = false;
+        accountBar.hidden = true;
+        showGate(true);
+        setMode("signin");
+        setStatus("Signed out. Sign in to load your cloud save.");
+      } catch (err) { setStatus(err.message || "Sign out failed.", true); }
+    });
+
+    async function handleAuthError(err) {
+      console.error(err);
+      const messages = {
+        "auth/email-already-in-use": "That email already has an account. Try signing in.",
+        "auth/invalid-email": "Enter a valid email address.",
+        "auth/weak-password": "Use a stronger password (at least 6 characters).",
+        "auth/user-not-found": "No account found for that email. Create an account first.",
+        "auth/wrong-password": "Incorrect email or password.",
+        "auth/invalid-credential": "Email/password is incorrect, or the account does not exist.",
+        "auth/operation-not-allowed": "Enable this sign-in method in Firebase Console > Authentication > Sign-in method.",
+        "auth/unauthorized-domain": "Add this website's domain in Firebase Authentication > Settings > Authorized domains.",
+        "permission-denied": "Firestore denied access. Check the security rules in the setup guide."
+      };
+      setStatus(messages[err.code] || err.message || "Authentication failed.", true);
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!auth) { setStatus("Firebase is not configured yet. Follow the setup guide included with this file.", true); return; }
+      const email = emailEl.value.trim();
+      const password = passwordEl.value;
+      submitBtn.disabled = googleBtn.disabled = true;
+      try {
+        let credential;
+        if (mode === "signup") {
+          await auth.createUserWithEmailAndPassword(email, password);
+          // onAuthStateChanged loads account data once after authentication.
+        } else {
+          await auth.signInWithEmailAndPassword(email, password);
+          // onAuthStateChanged loads account data once after authentication.
+        }
+      } catch (err) { await handleAuthError(err); }
+      finally { submitBtn.disabled = googleBtn.disabled = false; }
+    });
+
+    googleBtn.addEventListener("click", async () => {
+      if (!auth) { setStatus("Firebase is not configured yet. Follow the setup guide included with this file.", true); return; }
+      googleBtn.disabled = submitBtn.disabled = true;
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await auth.signInWithPopup(provider);
+        // onAuthStateChanged loads account data once after authentication.
+      } catch (err) { await handleAuthError(err); }
+      finally { googleBtn.disabled = submitBtn.disabled = false; }
+    });
+
+    if (!configured || !window.firebase) {
+      setupNotice.hidden = false;
+      setStatus("Setup needed: add Firebase config and enable both login methods.", true);
+      // Keep the gate visible until a project has been configured.
+      return;
+    }
+    try {
+      firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      db = firebase.firestore();
+
+      // Global leaderboard: each account may publish only its own public summary.
+      const lbStatus = document.getElementById("lbStatus");
+      const lbRows = document.getElementById("lbRows");
+      const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+      function getLeaderboardStats(user) {
+        let habitCompletions = 0;
+        try {
+          const appData = JSON.parse(localStorage.getItem("habitflow-data-v1") || "{}");
+          for (const day of Object.values(appData.habitsByDate || {})) {
+            if (day && typeof day === "object") habitCompletions += Object.values(day).filter(Boolean).length;
+          }
+          const focusMinutes = Math.max(0, Math.floor(Number(appData.totalMinutes) || 0));
+          return { habitCompletions, focusMinutes, score: habitCompletions * 100 + focusMinutes, name: (user.displayName || (user.email || "Player").split("@")[0] || "Player").slice(0, 32) };
+        } catch { return { habitCompletions: 0, focusMinutes: 0, score: 0, name: (user.displayName || "Player").slice(0,32) }; }
+      }
+      async function refreshLeaderboard() {
+        if (!currentUser || !db) { lbStatus.textContent = "Sign in first to publish your score."; return; }
+        const stats = getLeaderboardStats(currentUser);
+        document.getElementById("lbMyScore").textContent = stats.score.toLocaleString();
+        document.getElementById("lbMyHabits").textContent = stats.habitCompletions.toLocaleString();
+        document.getElementById("lbMyMinutes").textContent = stats.focusMinutes.toLocaleString();
+        lbStatus.textContent = "Publishing your score…";
+        try {
+          await db.collection("leaderboard").doc(currentUser.uid).set({
+            uid: currentUser.uid, name: stats.name, score: stats.score,
+            habitCompletions: stats.habitCompletions, focusMinutes: stats.focusMinutes,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+          const snap = await db.collection("leaderboard").orderBy("score", "desc").limit(20).get();
+          if (snap.empty) { lbRows.innerHTML = '<p class="muted small">No players yet. Your score is published.</p>'; }
+          else {
+            lbRows.innerHTML = '<div style="display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:12px;font-weight:800;color:var(--muted)"><span>RANK</span><span>PLAYER</span><span>POINTS</span></div>' + snap.docs.map((doc, i) => {
+              const row = doc.data() || {};
+              const isMe = doc.id === currentUser.uid;
+              return '<div style="display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:10px;align-items:center;padding:13px 4px;border-bottom:1px solid var(--line);' + (isMe ? 'font-weight:800;background:var(--surface);' : '') + '"><span>' + (i + 1) + '</span><span style="overflow-wrap:anywhere">' + escapeHtml(row.name || "Player") + (isMe ? ' <span style="color:var(--green)">(You)</span>' : '') + '</span><span>' + Math.max(0, Math.floor(Number(row.score) || 0)).toLocaleString() + '</span></div>';
+            }).join("");
+          }
+          const myRank = snap.docs.findIndex(doc => doc.id === currentUser.uid);
+          lbStatus.textContent = myRank >= 0 ? `Score updated. You are ranked #${myRank + 1} in the top 20.` : "Score updated. You are outside the current top 20.";
+        } catch (err) {
+          console.error("Leaderboard error", err);
+          lbStatus.textContent = err.code === "permission-denied" ? "Leaderboard permissions are missing. Add the leaderboard rules from the setup instructions." : "Could not load leaderboard: " + (err.message || "check Firestore settings");
+          lbRows.innerHTML = '<p class="muted small">Could not load rankings. Check the Firestore rules.</p>';
+        }
+      }
+      window.habitFlowRefreshLeaderboard = refreshLeaderboard;
+      document.getElementById("lbRefresh").addEventListener("click", refreshLeaderboard);
+
+      auth.onAuthStateChanged(async user => {
+        if (!user) {
+          currentUser = null; ready = false; loadingUid = null; loadedUid = null;
+          accountBar.hidden = true;
+          showGate(true);
+          return;
+        }
+        if (ready && currentUser && currentUser.uid === user.uid && loadedUid === user.uid) return;
+        try { await loadUserData(user); }
+        catch (err) { loadingUid = null; console.error("HabitFlow account load failed", err); await handleAuthError(err); showGate(true); }
+      });
+    } catch (err) {
+      setupNotice.hidden = false;
+      setStatus("Firebase initialization error: " + err.message, true);
+    }
+  })();
+  </script>
+
+</body>
+</html>
